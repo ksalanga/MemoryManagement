@@ -43,7 +43,7 @@ struct page_table{
 }; 
 
 struct page {
-    unsigned bitmap;
+    unsigned int bitmap;
 };
 
 
