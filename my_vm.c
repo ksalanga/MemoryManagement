@@ -16,6 +16,9 @@ void set_physical_mem() {
         printf("Setting Physical Memory Error");
     }
 
+    int nump_pages = MEMSIZE / PGSIZE;
+    int numv_pages = MAX_MEMSIZE / PGSIZE;
+
 }
 
 
