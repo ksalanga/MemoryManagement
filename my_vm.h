@@ -25,6 +25,8 @@ typedef unsigned long pde_t;
 
 #define TLB_ENTRIES 512
 
+void *physical_mem;
+
 //Structure to represents TLB
 struct tlb {
     /*Assume your TLB is a direct mapped TLB with number of entries as TLB_ENTRIES
