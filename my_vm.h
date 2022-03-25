@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/mman.h>
 
 //Assume the address space is 32 bits, so the max memory size is 4GB
 //Page size is 4KB
@@ -25,7 +26,7 @@ typedef unsigned long pde_t;
 
 #define TLB_ENTRIES 512
 
-void *physical_mem;
+void *physical_mem; //starting point for allocation of physical memory
 
 //Structure to represents TLB
 struct tlb {

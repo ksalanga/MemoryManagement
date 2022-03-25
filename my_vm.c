@@ -12,6 +12,10 @@ void set_physical_mem() {
     //HINT: Also calculate the number of physical and virtual pages and allocate
     //virtual and physical bitmaps and initialize them
 
+    if(mmap(physical_mem, MEMSIZE, PROT_WRITE, MAP_PRIVATE, 0, 0) == -1){
+        return -1;
+    }
+
 }
 
 
