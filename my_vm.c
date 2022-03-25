@@ -16,6 +16,12 @@ void set_physical_mem() {
         printf("Setting Physical Memory Error");
     }
 
+    int nump_pages = MEMSIZE / PGSIZE;
+    int numv_pages = MAX_MEMSIZE / PGSIZE;
+
+    struct page_table* phys_mem = (struct page_table*)malloc(nump_pages * sizeof(struct page_table));
+    struct page_table* virt_mem = (struct page_table*)malloc(numv_pages * sizeof(struct page_table));
+
 }
 
 

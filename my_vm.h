@@ -38,6 +38,15 @@ struct tlb {
 };
 struct tlb tlb_store;
 
+struct page_table{
+    struct page* pTable;
+}; 
+
+struct page {
+    unsigned int bitmap;
+};
+
+
 
 void set_physical_mem();
 pte_t* translate(pde_t *pgdir, void *va);
