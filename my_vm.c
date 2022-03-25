@@ -16,9 +16,6 @@ void set_physical_mem() {
         printf("Setting Physical Memory Error");
     }
 
-    int nump_pages = MEMSIZE / PGSIZE;
-    int numv_pages = MAX_MEMSIZE / PGSIZE;
-
 }
 
 
@@ -80,6 +77,13 @@ pte_t *translate(pde_t *pgdir, void *va) {
     * Part 2 HINT: Check the TLB before performing the translation. If
     * translation exists, then you can return physical address from the TLB.
     */
+
+   // Part 1:
+   // 32 bit system,
+   // Get top 20 bits of va, store top 10 bits of that 20 bits as page directory index
+   // store bottom 10 bits of that 20 as inner page index
+   // Get bottom 12 bits of 32 bit as offset.
+   // 
 
 
     //If translation not successful, then return NULL
