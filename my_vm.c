@@ -13,7 +13,7 @@ void set_physical_mem() {
     //virtual and physical bitmaps and initialize them
 
     if(mmap(physical_mem, MEMSIZE, PROT_WRITE, MAP_PRIVATE, 0, 0) == -1){
-        return -1;
+        printf("Setting Physical Memory Error");
     }
 
 }
