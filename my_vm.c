@@ -22,6 +22,9 @@ void set_physical_mem()
     physical_bitmap = (char *)malloc(PHYSICAL_BITMAP_SIZE);
     memset(physical_bitmap, 0, PHYSICAL_BITMAP_SIZE);
 
+    // page directory
+    set_bit_at_index(physical_bitmap, 0);
+
     virtual_bitmap = (char *)malloc(VIRTUAL_BITMAP_SIZE);
     memset(virtual_bitmap, 0, VIRTUAL_BITMAP_SIZE);
 }
@@ -89,13 +92,13 @@ pte_t *translate(pde_t *pgdir, void *va)
 
     pde_t page_directory_entry = *(pgdir + page_directory_index);
 
-    if (page_directory_entry != 0)
+    if (page_directory_entry)
     {
         pte_t *page_table = (pte_t *)page_directory_entry;
 
         pte_t page_table_entry = *(page_table + page_table_index);
 
-        if (page_table_entry != 0)
+        if (page_table_entry)
         {
             return (pte_t *)(page_table_entry + offset);
         }
@@ -125,7 +128,60 @@ int page_map(pde_t *pgdir, void *va, void *pa)
     and page table (2nd-level) indices. If no mapping exists, set the
     virtual to physical mapping */
 
-    return -1;
+    if (translate(pgdir, va))
+    {
+        return -1;
+    }
+
+    unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
+
+    unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
+
+#if LEVELS == 2
+
+    // Go in page directory
+    // if no page directory entry, find a free physical page in memory and set that as the page directory entry.
+    // if no free physical page, return -1
+    // that page directory entry is now the inner page table
+
+    // go inside inner page table
+    // inner page table index is set to physical page
+
+    unsigned long page_table_index = get_bottom_bits(vpn, PAGE_TABLE_BIT_SIZE);
+
+    pde_t page_directory_entry = *(pgdir + page_directory_index);
+
+    if (!page_directory_entry)
+    {
+        for (int i = 1; i < NUM_PHYSICAL_PAGES; i++)
+        {
+            if (!get_bit_at_index(physical_bitmap, i))
+            {
+                page_directory_entry = (pde_t)((void *)physical_mem + (i * PGSIZE));
+                *(pgdir + page_directory_entry) = page_directory_entry;
+                set_bit_at_index(physical_bitmap, 1);
+                break;
+            }
+        }
+
+        if (!page_directory_entry)
+        {
+            // no more physical pages
+            return -1;
+        }
+    }
+
+    pte_t *page_table = (pte_t *)page_directory_entry;
+
+    *(page_table + page_table_index) = (pte_t)pa;
+
+#else
+
+    // map differently for multiple levels
+
+#endif
+
+    return 1;
 }
 
 /*Function that gets the next available page
