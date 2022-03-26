@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #ifndef MY_VM_H_INCLUDED
 #define MY_VM_H_INCLUDED
 #include <stdbool.h>
@@ -11,8 +13,6 @@
 // Add any important includes here which you may need
 #include <math.h>
 #include <string.h>
-
-#define _GNU_SOURCE
 
 #define PGSIZE 4096
 
