@@ -1,36 +1,36 @@
 #include "my_vm.h"
 
 /*
-Function responsible for allocating and setting your physical memory 
+Function responsible for allocating and setting your physical memory
 */
-void set_physical_mem() {
+void set_physical_mem()
+{
 
-    //Allocate physical memory using mmap or malloc; this is the total size of
-    //your memory you are simulating
+    // Allocate physical memory using mmap or malloc; this is the total size of
+    // your memory you are simulating
 
-    
-    //HINT: Also calculate the number of physical and virtual pages and allocate
-    //virtual and physical bitmaps and initialize them
+    // HINT: Also calculate the number of physical and virtual pages and allocate
+    // virtual and physical bitmaps and initialize them
+    physical_mem = mmap(NULL, MEMSIZE, PROT_WRITE | PROT_READ, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 
-    if(mmap(physical_mem, MEMSIZE, PROT_WRITE, MAP_PRIVATE, 0, 0) == -1){
+    if (physical_mem == MAP_FAILED)
+    {
         printf("Setting Physical Memory Error");
     }
 
-    int nump_pages = MEMSIZE / PGSIZE;
-    int numv_pages = MAX_MEMSIZE / PGSIZE;
+    // initialize physical and virtual bitmaps for tracking
+    physical_bitmap = (char *)malloc(PHYSICAL_BITMAP_SIZE);
+    memset(physical_bitmap, 0, PHYSICAL_BITMAP_SIZE);
 
-    struct page_table* phys_mem = (struct page_table*)malloc(nump_pages * sizeof(struct page_table));
-    struct page_table* virt_mem = (struct page_table*)malloc(numv_pages * sizeof(struct page_table));
-
+    virtual_bitmap = (char *)malloc(VIRTUAL_BITMAP_SIZE);
+    memset(virtual_bitmap, 0, VIRTUAL_BITMAP_SIZE);
 }
-
 
 /*
  * Part 2: Add a virtual to physical page translation to the TLB.
  * Feel free to extend the function arguments or return type.
  */
-int
-add_TLB(void *va, void *pa)
+int add_TLB(void *va, void *pa)
 {
 
     /*Part 2 HINT: Add a virtual to physical page translation to the TLB */
@@ -38,64 +38,81 @@ add_TLB(void *va, void *pa)
     return -1;
 }
 
-
 /*
  * Part 2: Check TLB for a valid translation.
  * Returns the physical page address.
  * Feel free to extend this function and change the return type.
  */
 pte_t *
-check_TLB(void *va) {
+check_TLB(void *va)
+{
 
     /* Part 2: TLB lookup code here */
-
 }
-
 
 /*
  * Part 2: Print TLB miss rate.
  * Feel free to extend the function arguments or return type.
  */
-void
-print_TLB_missrate()
+void print_TLB_missrate()
 {
-    double miss_rate = 0;	
+    double miss_rate = 0;
 
     /*Part 2 Code here to calculate and print the TLB miss rate*/
 
-
-
-
     fprintf(stderr, "TLB miss rate %lf \n", miss_rate);
 }
-
-
 
 /*
 The function takes a virtual address and page directories starting address and
 performs translation to return the physical address
 */
-pte_t *translate(pde_t *pgdir, void *va) {
+pte_t *translate(pde_t *pgdir, void *va)
+{
     /* Part 1 HINT: Get the Page directory index (1st level) Then get the
-    * 2nd-level-page table index using the virtual address.  Using the page
-    * directory index and page table index get the physical address.
-    *
-    * Part 2 HINT: Check the TLB before performing the translation. If
-    * translation exists, then you can return physical address from the TLB.
-    */
+     * 2nd-level-page table index using the virtual address.  Using the page
+     * directory index and page table index get the physical address.
+     *
+     * Part 2 HINT: Check the TLB before performing the translation. If
+     * translation exists, then you can return physical address from the TLB.
+     */
 
-   // Part 1:
-   // 32 bit system,
-   // Get top 20 bits of va, store top 10 bits of that 20 bits as page directory index
-   // store bottom 10 bits of that 20 as inner page index
-   // Get bottom 12 bits of 32 bit as offset.
-   // 
+    // Part 1:
+    unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
+    unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
 
+    unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
 
-    //If translation not successful, then return NULL
-    return NULL; 
+#if LEVELS == 2
+
+    unsigned long page_table_index = get_bottom_bits(vpn, PAGE_TABLE_BIT_SIZE);
+
+    pde_t page_directory_entry = *(pgdir + page_directory_index);
+
+    if (page_directory_entry != 0)
+    {
+        pte_t *page_table = (pte_t *)page_directory_entry;
+
+        pte_t page_frame_entry = *(page_table + page_table_index);
+
+        if (page_frame_entry != 0)
+        {
+            return (pte_t *)(page_frame_entry + offset);
+        }
+        return NULL;
+    }
+
+#else
+
+    // get all inner page level indexes
+
+#endif
+
+    // inner page level pointer = *pgdir +
+
+    // If translation not successful, then return NULL
+    return NULL;
 }
-
 
 /*
 The function takes a page directory address, virtual address, physical address
@@ -103,8 +120,7 @@ as an argument, and sets a page table entry. This function will walk the page
 directory to see if there is an existing mapping for a virtual address. If the
 virtual address is not present, then a new entry will be added
 */
-int
-page_map(pde_t *pgdir, void *va, void *pa)
+int page_map(pde_t *pgdir, void *va, void *pa)
 {
 
     /*HINT: Similar to translate(), find the page directory (1st level)
@@ -114,100 +130,98 @@ page_map(pde_t *pgdir, void *va, void *pa)
     return -1;
 }
 
-
 /*Function that gets the next available page
-*/
-void *get_next_avail(int num_pages) {
- 
-    //Use virtual address bitmap to find the next free page
-}
+ */
+void *get_next_avail(int num_pages)
+{
 
+    // Use virtual address bitmap to find the next free page
+}
 
 /* Function responsible for allocating pages
 and used by the benchmark
 */
-void *t_malloc(unsigned int num_bytes) {
+void *t_malloc(unsigned int num_bytes)
+{
 
-    /* 
+    /*
      * HINT: If the physical memory is not yet initialized, then allocate and initialize.
      */
 
-   /* 
-    * HINT: If the page directory is not initialized, then initialize the
-    * page directory. Next, using get_next_avail(), check if there are free pages. If
-    * free pages are available, set the bitmaps and map a new page. Note, you will 
-    * have to mark which physical pages are used. 
-    */
+    /*
+     * HINT: If the page directory is not initialized, then initialize the
+     * page directory. Next, using get_next_avail(), check if there are free pages. If
+     * free pages are available, set the bitmaps and map a new page. Note, you will
+     * have to mark which physical pages are used.
+     */
 
     return NULL;
 }
 
 /* Responsible for releasing one or more memory pages using virtual address (va)
-*/
-void t_free(void *va, int size) {
+ */
+void t_free(void *va, int size)
+{
 
     /* Part 1: Free the page table entries starting from this virtual address
-     * (va). Also mark the pages free in the bitmap. Perform free only if the 
+     * (va). Also mark the pages free in the bitmap. Perform free only if the
      * memory from "va" to va+size is valid.
      *
      * Part 2: Also, remove the translation from the TLB
      */
-    
 }
-
 
 /* The function copies data pointed by "val" to physical
  * memory pages using virtual address (va)
  * The function returns 0 if the put is successfull and -1 otherwise.
-*/
-void put_value(void *va, void *val, int size) {
+ */
+void put_value(void *va, void *val, int size)
+{
 
     /* HINT: Using the virtual address and translate(), find the physical page. Copy
-     * the contents of "val" to a physical page. NOTE: The "size" value can be larger 
+     * the contents of "val" to a physical page. NOTE: The "size" value can be larger
      * than one page. Therefore, you may have to find multiple pages using translate()
      * function.
      */
-
-
 }
-
 
 /*Given a virtual address, this function copies the contents of the page to val*/
-void get_value(void *va, void *val, int size) {
+void get_value(void *va, void *val, int size)
+{
 
     /* HINT: put the values pointed to by "va" inside the physical memory at given
-    * "val" address. Assume you can access "val" directly by derefencing them.
-    */
-
-
+     * "val" address. Assume you can access "val" directly by derefencing them.
+     */
 }
-
-
 
 /*
 This function receives two matrices mat1 and mat2 as an argument with size
 argument representing the number of rows and columns. After performing matrix
 multiplication, copy the result to answer.
 */
-void mat_mult(void *mat1, void *mat2, int size, void *answer) {
+void mat_mult(void *mat1, void *mat2, int size, void *answer)
+{
 
     /* Hint: You will index as [i * size + j] where  "i, j" are the indices of the
      * matrix accessed. Similar to the code in test.c, you will use get_value() to
-     * load each element and perform multiplication. Take a look at test.c! In addition to 
-     * getting the values from two matrices, you will perform multiplication and 
+     * load each element and perform multiplication. Take a look at test.c! In addition to
+     * getting the values from two matrices, you will perform multiplication and
      * store the result to the "answer array"
      */
     int x, y, val_size = sizeof(int);
     int i, j, k;
-    for (i = 0; i < size; i++) {
-        for(j = 0; j < size; j++) {
+    for (i = 0; i < size; i++)
+    {
+        for (j = 0; j < size; j++)
+        {
             unsigned int a, b, c = 0;
-            for (k = 0; k < size; k++) {
+            for (k = 0; k < size; k++)
+            {
                 int address_a = (unsigned int)mat1 + ((i * size * sizeof(int))) + (k * sizeof(int));
                 int address_b = (unsigned int)mat2 + ((k * size * sizeof(int))) + (j * sizeof(int));
-                get_value( (void *)address_a, &a, sizeof(int));
-                get_value( (void *)address_b, &b, sizeof(int));
-                // printf("Values at the index: %d, %d, %d, %d, %d\n", 
+                get_value((void *)address_a, &a, sizeof(int));
+                get_value((void *)address_b, &b, sizeof(int));
+                // printf("Values at the index: %d, %d, %d, %d, %d\n",
                 //     a, b, size, (i * size + k), (k * size + j));
                 c += (a * b);
             }
@@ -218,5 +232,52 @@ void mat_mult(void *mat1, void *mat2, int size, void *answer) {
     }
 }
 
+static int get_msb_index(unsigned long value)
+{
+    unsigned long msbIndex = 0;
+    while (value >>= 1)
+    {
+        msbIndex++;
+    }
+    return msbIndex;
+}
 
+static unsigned long get_top_bits(unsigned long value, int num_bits, int binary_length)
+{
+    return value >> (binary_length - num_bits);
+}
 
+static unsigned long get_bottom_bits(unsigned long value, int num_bits)
+{
+    return value & ((1 << num_bits) - 1);
+}
+
+static void set_bit_at_index(char *bitmap, int index)
+{
+    // Assuming Little Endian Order
+    // Go to index divided by 8,
+    // Remainder is how many we'll shift and toggle.
+
+    bitmap[index / 8] |= (1UL << (index % 8));
+    return;
+}
+
+static int get_bit_at_index(char *bitmap, int index)
+{
+    // Get bits / 8 index,
+    // Right shift by remainder
+    // Mask with & 1
+    int bit = bitmap[index / 8];
+    bit >>= (index % 8);
+    return bit & 1;
+}
+
+unsigned int log_2(int i)
+{
+    int l = 0;
+    while (i >>= 1)
+    {
+        ++l;
+    };
+    return l;
+}

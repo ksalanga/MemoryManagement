@@ -5,18 +5,46 @@
 #include <stdio.h>
 #include <sys/mman.h>
 
-//Assume the address space is 32 bits, so the max memory size is 4GB
-//Page size is 4KB
+// Assume the address space is 32 bits, so the max memory size is 4GB
+// Page size is 4KB
 
-//Add any important includes here which you may need
+// Add any important includes here which you may need
+#include <math.h>
+#include <string.h>
+
+#define _GNU_SOURCE
 
 #define PGSIZE 4096
 
+#define LEVELS 2
+
+// Virtual Address Bits
+#define SYSTEM_BIT_SIZE sizeof(unsigned long) * 8
+
+#define OFFSET_BIT_SIZE log_2(PGSIZE)
+
+#define VPN_BIT_SIZE SYSTEM_BIT_SIZE - OFFSET_BIT_SIZE
+
+#define PAGE_TABLE_BIT_SIZE log_2(PGSIZE / sizeof(unsigned long))
+
+#define PAGE_DIRECTORY_BIT_SIZE VPN_BIT_SIZE - ((LEVELS - 1) * PAGE_TABLE_BIT_SIZE)
+
 // Maximum size of virtual memory
-#define MAX_MEMSIZE 4ULL*1024*1024*1024
+#define MAX_MEMSIZE 4ULL * 1024 * 1024 * 1024
 
 // Size of "physcial memory"
-#define MEMSIZE 1024*1024*1024
+#define MEMSIZE 1024 * 1024 * 1024
+
+#define NUM_VIRTUAL_PAGES MAX_MEMSIZE / PGSIZE
+
+#define NUM_PHYSICAL_PAGES MEMSIZE / PGSIZE
+
+// bitmap size represents the number of "characters" we allocate.
+// number of characters (bitmap size) * 8 bits = number of bits
+// 1 bit = 1 page
+#define PHYSICAL_BITMAP_SIZE NUM_PHYSICAL_PAGES / 8
+
+#define VIRTUAL_BITMAP_SIZE NUM_VIRTUAL_PAGES / 8
 
 // Represents a page table entry
 typedef unsigned long pte_t;
@@ -26,31 +54,40 @@ typedef unsigned long pde_t;
 
 #define TLB_ENTRIES 512
 
-void *physical_mem; //starting point for allocation of physical memory
+void *physical_mem; // starting point for allocation of physical memory
 
-//Structure to represents TLB
-struct tlb {
+char *physical_bitmap;
+
+char *virtual_bitmap; // index 0 is the start of the page directory
+
+// Structure to represents TLB
+struct tlb
+{
     /*Assume your TLB is a direct mapped TLB with number of entries as TLB_ENTRIES
-    * Think about the size of each TLB entry that performs virtual to physical
-    * address translation.
-    */
-
+     * Think about the size of each TLB entry that performs virtual to physical
+     * address translation.
+     */
 };
 struct tlb tlb_store;
 
-struct page_table{
-    struct page* pTable;
-}; 
-
-struct page {
-    unsigned int bitmap;
+struct page_table
+{
+    struct page *pTable;
 };
 
+// Bits
+static int get_msb_index(unsigned long value);
+static unsigned long get_top_bits(unsigned long value, int num_bits, int binary_length);
+static unsigned long get_bottom_bits(unsigned long value, int num_bits);
+static void set_bit_at_index(char *bitmap, int index);
+static int get_bit_at_index(char *bitmap, int index);
 
+// log
+unsigned int log_2(int i);
 
 void set_physical_mem();
-pte_t* translate(pde_t *pgdir, void *va);
-int page_map(pde_t *pgdir, void *va, void* pa);
+pte_t *translate(pde_t *pgdir, void *va);
+int page_map(pde_t *pgdir, void *va, void *pa);
 bool check_in_tlb(void *va);
 void put_in_tlb(void *va, void *pa);
 void *t_malloc(unsigned int num_bytes);
