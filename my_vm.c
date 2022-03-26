@@ -93,11 +93,11 @@ pte_t *translate(pde_t *pgdir, void *va)
     {
         pte_t *page_table = (pte_t *)page_directory_entry;
 
-        pte_t page_frame_entry = *(page_table + page_table_index);
+        pte_t page_table_entry = *(page_table + page_table_index);
 
-        if (page_frame_entry != 0)
+        if (page_table_entry != 0)
         {
-            return (pte_t *)(page_frame_entry + offset);
+            return (pte_t *)(page_table_entry + offset);
         }
         return NULL;
     }
