@@ -108,8 +108,6 @@ pte_t *translate(pde_t *pgdir, void *va)
 
 #endif
 
-    // inner page level pointer = *pgdir +
-
     // If translation not successful, then return NULL
     return NULL;
 }
