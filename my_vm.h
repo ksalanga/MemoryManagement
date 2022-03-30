@@ -82,6 +82,9 @@ static unsigned long get_bottom_bits(unsigned long value, int num_bits);
 static void set_bit_at_index(char *bitmap, int index);
 static int get_bit_at_index(char *bitmap, int index);
 
+// Gets next physical page
+void *get_next_phys(int num_pages);
+
 // log
 unsigned int log_2(int i);
 
