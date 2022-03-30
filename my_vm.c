@@ -182,7 +182,6 @@ void *get_next_avail()
     {
         if (!get_bit_at_index(virtual_bitmap, i))
         {
-            set_bit_at_index(virtual_bitmap, i);
 #if LEVELS == 2
             // Convert to virtual address pointer where
             // page directory index = i / Page Size
@@ -211,7 +210,6 @@ void *get_next_phys()
     {
         if (!get_bit_at_index(physical_bitmap, i))
         {
-            set_bit_at_index(physical_bitmap, i);
             return physical_mem + i * PGSIZE;
         }
     }
