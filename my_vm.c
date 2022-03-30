@@ -257,6 +257,18 @@ void t_free(void *va, int size)
      *
      * Part 2: Also, remove the translation from the TLB
      */
+
+    // Assume Virtual Pages are Contiguous
+    if ((unsigned long)(va + size) < MAX_MEMSIZE)
+    {
+        // get page directory index
+        // get page table index
+        // see if page is allocated
+        // if page allocated,
+        // go through ceil(size / pagesize) pages
+        // set virtual bitmaps to 0
+        // set physical bitmaps to 0
+    }
 }
 
 /* The function copies data pointed by "val" to physical
