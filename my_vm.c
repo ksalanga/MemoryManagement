@@ -199,7 +199,7 @@ free_virtual_page get_next_avail()
             unsigned long VPN = page_directory_index;
             VPN <<= PAGE_TABLE_BIT_SIZE;
             VPN += page_table_index;
-            free_virtual_page.address = (void *)VPN;
+            free_virtual_page.address = (void *)(VPN << OFFSET_BIT_SIZE);
             free_virtual_page.bitmap_index = i;
             break;
 #else
