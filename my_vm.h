@@ -72,17 +72,17 @@ struct tlb
 };
 struct tlb tlb_store;
 
-typedef struct FREE_PHYSICAL_PAGE
+typedef struct PHYSICAL_PAGE
 {
     void *address;
     int bitmap_index;
-} free_physical_page;
+} physical_page;
 
-typedef struct FREE_VIRTUAL_PAGE
+typedef struct VIRTUAL_PAGE
 {
     void *address;
     int bitmap_index;
-} free_virtual_page;
+} virtual_page;
 
 // Bits
 static int get_msb_index(unsigned long value);
@@ -90,6 +90,7 @@ static int get_msb_index(unsigned long value);
 static unsigned long get_top_bits(unsigned long value, int num_bits, int binary_length);
 static unsigned long get_bottom_bits(unsigned long value, int num_bits);
 static void set_bit_at_index(char *bitmap, int index);
+static void clear_bit_at_index(char *bitmap, int index);
 static int get_bit_at_index(char *bitmap, int index);
 
 // Gets next physical page
