@@ -128,11 +128,6 @@ int page_map(pde_t *pgdir, void *va, void *pa)
     and page table (2nd-level) indices. If no mapping exists, set the
     virtual to physical mapping */
 
-    if (translate(pgdir, va))
-    {
-        return -1;
-    }
-
     unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
 
     unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
@@ -153,20 +148,15 @@ int page_map(pde_t *pgdir, void *va, void *pa)
 
     if (!page_directory_entry)
     {
-        for (int i = 1; i < NUM_PHYSICAL_PAGES; i++)
-        {
-            if (!get_bit_at_index(physical_bitmap, i))
-            {
-                page_directory_entry = (pde_t)((void *)physical_mem + (i * PGSIZE));
-                *(pgdir + page_directory_entry) = page_directory_entry;
-                set_bit_at_index(physical_bitmap, 1);
-                break;
-            }
-        }
+        page_directory_entry = (pde_t)get_next_phys(NUM_PHYSICAL_PAGES);
 
-        if (!page_directory_entry)
+        if (page_directory_entry)
         {
-            // no more physical pages
+            *(pgdir + page_directory_index) = page_directory_entry;
+        }
+        else
+        {
+            // no physical pages
             return -1;
         }
     }
@@ -190,6 +180,19 @@ void *get_next_avail(int num_pages)
 {
 
     // Use virtual address bitmap to find the next free page
+}
+
+void *get_next_phys(int num_pages)
+{
+    for (int i = 1; i < num_pages; i++)
+    {
+        if (!get_bit_at_index(physical_bitmap, i))
+        {
+            set_bit_at_index(physical_bitmap, i);
+            return physical_mem + i * PGSIZE;
+        }
+    }
+    return NULL;
 }
 
 /* Function responsible for allocating pages
