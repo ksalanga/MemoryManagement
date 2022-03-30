@@ -148,7 +148,7 @@ int page_map(pde_t *pgdir, void *va, void *pa)
 
     if (!page_directory_entry)
     {
-        page_directory_entry = (pde_t)get_next_phys();
+        page_directory_entry = (pde_t)get_next_phys().address;
 
         if (page_directory_entry)
         {
@@ -176,8 +176,12 @@ int page_map(pde_t *pgdir, void *va, void *pa)
 
 /*Function that gets the next available page
  */
-void *get_next_avail()
+free_virtual_page get_next_avail()
 {
+    free_virtual_page free_virtual_page;
+
+    free_virtual_page.address = NULL;
+
     for (int i = 0; i < NUM_VIRTUAL_PAGES; i++)
     {
         if (!get_bit_at_index(virtual_bitmap, i))
@@ -195,25 +199,31 @@ void *get_next_avail()
             unsigned long VPN = page_directory_index;
             VPN <<= PAGE_TABLE_BIT_SIZE;
             VPN += page_table_index;
-            return (void *)(VPN << OFFSET_BIT_SIZE);
+            free_virtual_page.address = (void *)VPN;
+            free_virtual_page.bitmap_index = i;
+            break;
 #else
 // multilevels
 #endif
         }
     }
-    return NULL;
+    return free_virtual_page;
 }
 
-void *get_next_phys()
+free_physical_page get_next_phys()
 {
+    free_physical_page free_physical_page;
+    free_physical_page.address = NULL;
     for (int i = 1; i < NUM_PHYSICAL_PAGES; i++)
     {
         if (!get_bit_at_index(physical_bitmap, i))
         {
-            return physical_mem + i * PGSIZE;
+            free_physical_page.address = physical_mem + i * PGSIZE;
+            free_physical_page.bitmap_index = i;
+            break;
         }
     }
-    return NULL;
+    return free_physical_page;
 }
 
 /* Function responsible for allocating pages
