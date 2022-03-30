@@ -100,7 +100,7 @@ pte_t *translate(pde_t *pgdir, void *va)
 
         if (page_table_entry)
         {
-            return (pte_t *)(page_table_entry + offset);
+            return (pte_t *)(page_table_entry + offset); //<-physical address?
         }
         return NULL;
     }
@@ -229,6 +229,13 @@ free_physical_page get_next_phys()
 /* Function responsible for allocating pages
 and used by the benchmark
 */
+
+// part- initializer function
+//If phys_mem = null or pg_dir = null <-Pre-initialization 
+//   read project 1 for efficient bit map implementation and allocation
+//   malloc page directory bits directly and call set physical mem
+//If get_next_avail() = true <- there are free pages
+//   call page map with vp = return val of get_next_avail(), pp = use physical bitmap to find next avail, pg dir should be static or still atainable
 void *t_malloc(unsigned int num_bytes)
 {
 
@@ -242,6 +249,8 @@ void *t_malloc(unsigned int num_bytes)
      * free pages are available, set the bitmaps and map a new page. Note, you will
      * have to mark which physical pages are used.
      */
+
+    int num_pages = ceil(((double)num_bytes)/ PGSIZE);
 
     return NULL;
 }
