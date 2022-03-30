@@ -250,7 +250,23 @@ void *t_malloc(unsigned int num_bytes)
      * have to mark which physical pages are used.
      */
 
+    if(physical_mem == NULL){
+        set_physical_mem();
+    }    
+    
     int num_pages = ceil(((double)num_bytes)/ PGSIZE);
+
+    for(int i = 0; i< num_pages;i++){
+        free_virtual_page vp = get_next_avail();
+        free_virtual_page* next_vp =  &vp;
+        
+        free_physical_page pp = get_next_phys();
+        free_physical_page* next_pp = &pp;
+        if(next_vp != NULL){
+            page_map(0, next_vp, next_pp); // pg directory?
+        }
+
+    }
 
     return NULL;
 }
