@@ -21,11 +21,13 @@
 // Virtual Address Bits
 #define SYSTEM_BIT_SIZE sizeof(unsigned long) * 8
 
+#define PAGE_TABLE_ENTRIES PGSIZE / sizeof(unsigned long)
+
 #define OFFSET_BIT_SIZE log_2(PGSIZE)
 
 #define VPN_BIT_SIZE SYSTEM_BIT_SIZE - OFFSET_BIT_SIZE
 
-#define PAGE_TABLE_BIT_SIZE log_2(PGSIZE / sizeof(unsigned long))
+#define PAGE_TABLE_BIT_SIZE log_2(PAGE_TABLE_ENTRIES)
 
 #define PAGE_DIRECTORY_BIT_SIZE VPN_BIT_SIZE - ((LEVELS - 1) * PAGE_TABLE_BIT_SIZE)
 
@@ -83,7 +85,7 @@ static void set_bit_at_index(char *bitmap, int index);
 static int get_bit_at_index(char *bitmap, int index);
 
 // Gets next physical page
-void *get_next_phys(int num_pages);
+void *get_next_phys();
 
 // log
 unsigned int log_2(int i);
