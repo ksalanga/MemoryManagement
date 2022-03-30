@@ -148,7 +148,7 @@ int page_map(pde_t *pgdir, void *va, void *pa)
 
     if (!page_directory_entry)
     {
-        page_directory_entry = (pde_t)get_next_phys(NUM_PHYSICAL_PAGES);
+        page_directory_entry = (pde_t)get_next_phys();
 
         if (page_directory_entry)
         {
@@ -176,15 +176,38 @@ int page_map(pde_t *pgdir, void *va, void *pa)
 
 /*Function that gets the next available page
  */
-void *get_next_avail(int num_pages)
+void *get_next_avail()
 {
+    for (int i = 0; i < NUM_VIRTUAL_PAGES; i++)
+    {
+        if (!get_bit_at_index(virtual_bitmap, i))
+        {
+            set_bit_at_index(virtual_bitmap, i);
+#if LEVELS == 2
+            // Convert to virtual address pointer where
+            // page directory index = i / Page Size
+            // page table index = i % Page Size
+            // VPN = page directory << Page Table index
+            // VPN += page tableindex
+            // address = VPN << Offset size
+            unsigned long page_directory_index = i / PAGE_TABLE_ENTRIES;
+            unsigned long page_table_index = i % PAGE_TABLE_ENTRIES;
 
-    // Use virtual address bitmap to find the next free page
+            unsigned long VPN = page_directory_index;
+            VPN <<= PAGE_TABLE_BIT_SIZE;
+            VPN += page_table_index;
+            return (void *)(VPN << OFFSET_BIT_SIZE);
+#else
+// multilevels
+#endif
+        }
+    }
+    return NULL;
 }
 
-void *get_next_phys(int num_pages)
+void *get_next_phys()
 {
-    for (int i = 1; i < num_pages; i++)
+    for (int i = 1; i < NUM_PHYSICAL_PAGES; i++)
     {
         if (!get_bit_at_index(physical_bitmap, i))
         {
