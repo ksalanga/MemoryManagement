@@ -263,7 +263,7 @@ void *t_malloc(unsigned int num_bytes)
         free_physical_page pp = get_next_phys();
         free_physical_page* next_pp = &pp;
         if(next_vp != NULL){
-            page_map(0, next_vp, next_pp); // pg directory?
+            page_map(0, next_vp, next_pp); // pg directory? fix parameters
         }
 
     }
