@@ -248,13 +248,10 @@ void *t_malloc(unsigned int num_bytes)
     for (int i = 0; i < num_pages; i++)
     {
         virtual_page vp = get_next_avail();
-        virtual_page *next_vp = &vp;
-
         physical_page pp = get_next_phys();
-        physical_page *next_pp = &pp;
         if (next_vp != NULL)
         {
-            page_map(physical_mem, next_vp, next_pp); // pg directory?
+            page_map(physical_mem, vp.address, pp.address); // pg directory?
         }
     }
 
