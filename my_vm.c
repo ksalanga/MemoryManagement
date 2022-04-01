@@ -187,19 +187,7 @@ virtual_page get_next_avail()
         if (!get_bit_at_index(virtual_bitmap, i))
         {
 #if LEVELS == 2
-            // Convert to virtual address pointer where
-            // page directory index = i / Page Size
-            // page table index = i % Page Size
-            // VPN = page directory << Page Table index
-            // VPN += page tableindex
-            // address = VPN << Offset size
-            unsigned long page_directory_index = i / PAGE_TABLE_ENTRIES;
-            unsigned long page_table_index = i % PAGE_TABLE_ENTRIES;
-
-            unsigned long VPN = page_directory_index;
-            VPN <<= PAGE_TABLE_BIT_SIZE;
-            VPN += page_table_index;
-            free_virtual_page.address = (void *)(VPN << OFFSET_BIT_SIZE);
+            free_virtual_page.address = bitmap_index_to_va(i);
             free_virtual_page.bitmap_index = i;
             break;
 #else
@@ -285,37 +273,30 @@ void t_free(void *va, int size)
      * Part 2: Also, remove the translation from the TLB
      */
 
-    // Assume Virtual Pages are Contiguous
     if ((unsigned long)(va + size) < MAX_MEMSIZE)
     {
         int num_pages = ceil(((double)size) / PGSIZE) + 1e-9;
-        for (int i = 0; i < num_pages; i++)
+
+        unsigned long starting_vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
+        unsigned long starting_page_directory_index = get_top_bits(starting_vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
+        unsigned long starting_page_table_index = get_bottom_bits(PAGE_TABLE_BIT_SIZE, VPN_BIT_SIZE);
+
+        int starting_bitmap_index = starting_page_directory_index * PAGE_TABLE_ENTRIES + starting_page_table_index;
+
+        free_pages(starting_page_directory_index, starting_page_table_index, starting_bitmap_index);
+
+        for (int va_index = starting_bitmap_index + 1; va_index < starting_bitmap_index + num_pages; va_index++)
         {
 #if LEVELS == 2
-            unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
-
-            // get page directory index
-            unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
-
-            // get page table index
-            unsigned long page_table_index = get_bottom_bits(PAGE_TABLE_BIT_SIZE, VPN_BIT_SIZE);
-
-            // see if page is allocated
-            if (get_bit_at_index(virtual_bitmap, page_directory_index * PGSIZE + page_table_index))
+            if (get_bit_at_index(virtual_bitmap, va_index))
             {
-                pde_t page_directory_entry = *((pde_t *)physical_mem + page_directory_index);
+                void *current_va = bitmap_index_to_va(va_index);
 
-                pte_t *page_table = (pte_t *)page_directory_entry;
+                unsigned long current_vpn = get_top_bits((unsigned long)current_va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
+                unsigned long current_page_directory_index = get_top_bits(current_vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
+                unsigned long current_page_table_index = get_bottom_bits(PAGE_TABLE_BIT_SIZE, VPN_BIT_SIZE);
 
-                // Physical Page
-                pte_t page_table_entry = *(page_table + page_table_index);
-
-                // Clear physical bitmap
-                clear_bit_at_index(physical_bitmap, ((void *)page_table_entry - physical_mem) / PGSIZE);
-
-                // Clears Inner Page entry and virtual bitmap index
-                *(page_table + page_table_index) = 0;
-                clear_bit_at_index(virtual_bitmap, page_directory_index * PGSIZE + page_table_index);
+                free_pages(current_page_directory_index, current_page_table_index, va_index);
             }
 
 #else
@@ -323,6 +304,20 @@ void t_free(void *va, int size)
 #endif
         }
     }
+}
+
+void free_pages(unsigned long page_directory_index, unsigned long page_table_index, int virtual_bitmap_index)
+{
+    pde_t page_directory_entry = *((pde_t *)physical_mem + page_directory_index);
+
+    pte_t *page_table = (pte_t *)page_directory_entry;
+
+    pte_t page_table_entry = *(page_table + page_table_index);
+
+    clear_bit_at_index(physical_bitmap, ((void *)page_table_entry - physical_mem) / PGSIZE);
+
+    *(page_table + page_table_index) = 0;
+    clear_bit_at_index(virtual_bitmap, virtual_bitmap_index);
 }
 
 /* The function copies data pointed by "val" to physical
@@ -384,6 +379,18 @@ void mat_mult(void *mat1, void *mat2, int size, void *answer)
             put_value((void *)address_c, (void *)&c, sizeof(int));
         }
     }
+}
+
+void *bitmap_index_to_va(int i)
+{
+    unsigned long page_directory_index = i / PAGE_TABLE_ENTRIES;
+    unsigned long page_table_index = i % PAGE_TABLE_ENTRIES;
+
+    unsigned long VPN = page_directory_index;
+    VPN <<= PAGE_TABLE_BIT_SIZE;
+    VPN += page_table_index;
+
+    return (void *)(VPN << OFFSET_BIT_SIZE);
 }
 
 static int get_msb_index(unsigned long value)
