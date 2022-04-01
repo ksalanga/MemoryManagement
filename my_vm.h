@@ -13,6 +13,7 @@
 // Add any important includes here which you may need
 #include <math.h>
 #include <string.h>
+#include <pthread.h>
 
 #define PGSIZE 4096
 
@@ -103,6 +104,9 @@ static int get_bit_at_index(char *bitmap, int index);
 
 // Gets next physical page
 free_physical_page get_next_phys();
+
+// locks
+pthread_mutex_t bitmap_lock;
 
 // log
 unsigned int log_2(int i);

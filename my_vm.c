@@ -14,6 +14,7 @@ void set_physical_mem()
     physical_mem = mmap(NULL, MEMSIZE, PROT_WRITE | PROT_READ, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 
     num_phys_page_left = NUM_PHYSICAL_PAGES;
+    pthread_mutex_init(&bitmap_lock, NULL);
 
     if (physical_mem == MAP_FAILED)
     {
@@ -276,6 +277,7 @@ void *t_malloc(unsigned int num_bytes)
         return NULL;
     }
 
+    pthread_mutex_lock(&bitmap_lock);
     if(num_pages > 1){
         virtual_page fvp = get_next_mult_avail(num_pages);
         for(int i = 0; i< num_pages;i++){
@@ -283,6 +285,7 @@ void *t_malloc(unsigned int num_bytes)
             if (fvp.address != NULL && pp.address != NULL){
                 int err = page_map(physical_mem, fvp.address, pp.address); 
                 if(err == -1){
+                    pthread_mutex_unlock(&bitmap_lock);
                     return NULL;
                 }
                 set_bit_at_index(virtual_bitmap, fvp.bitmap_index);
@@ -292,6 +295,7 @@ void *t_malloc(unsigned int num_bytes)
                 int temp_bitmap_index = fvp.bitmap_index;
                 fvp.address = bitmap_index_to_va(temp_bitmap_index);
             }else{
+                pthread_mutex_unlock(&bitmap_lock);
                 return NULL; 
             }
             
@@ -304,6 +308,7 @@ void *t_malloc(unsigned int num_bytes)
         {
             int err = page_map(physical_mem, vp.address, pp.address); 
             if(err == -1){
+                pthread_mutex_unlock(&bitmap_lock);
                 return NULL;
             }
             set_bit_at_index(virtual_bitmap, vp.bitmap_index);
@@ -311,10 +316,11 @@ void *t_malloc(unsigned int num_bytes)
             num_phys_page_left--;
 
         }else{
+            pthread_mutex_unlock(&bitmap_lock);
             return NULL;
         }
     }
-
+    pthread_mutex_unlock(&bitmap_lock);
     return NULL;
 }
 
@@ -334,8 +340,10 @@ void t_free(void *va, int size)
 
     if ((unsigned long)(va + size) < MAX_MEMSIZE)
     {
+        pthread_mutex_lock(&bitmap_lock);
         int num_pages = ceil(((double)size) / PGSIZE) + 1e-9;
 
+#if LEVELS == 2
         unsigned long starting_vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
         unsigned long starting_page_directory_index = get_top_bits(starting_vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
         unsigned long starting_page_table_index = get_bottom_bits(PAGE_TABLE_BIT_SIZE, VPN_BIT_SIZE);
@@ -346,7 +354,6 @@ void t_free(void *va, int size)
 
         for (int va_index = starting_bitmap_index + 1; va_index < starting_bitmap_index + num_pages; va_index++)
         {
-#if LEVELS == 2
             if (get_bit_at_index(virtual_bitmap, va_index))
             {
                 void *current_va = bitmap_index_to_va(va_index);
@@ -358,10 +365,11 @@ void t_free(void *va, int size)
                 free_pages(current_page_directory_index, current_page_table_index, va_index);
             }
 
+        }
+        pthread_mutex_unlock(&bitmap_lock);
 #else
 
 #endif
-        }
     }
 }
 
