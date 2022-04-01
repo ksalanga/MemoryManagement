@@ -13,6 +13,8 @@ void set_physical_mem()
     // virtual and physical bitmaps and initialize them
     physical_mem = mmap(NULL, MEMSIZE, PROT_WRITE | PROT_READ, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 
+    num_phys_page_left = NUM_PHYSICAL_PAGES;
+
     if (physical_mem == MAP_FAILED)
     {
         printf("Setting Physical Memory Error");
@@ -269,6 +271,11 @@ void *t_malloc(unsigned int num_bytes)
     }
 
     int num_pages = ceil(((double)num_bytes) / PGSIZE) + 1e-9;
+
+    if((num_pages + 1) > num_phys_page_left){
+        return -1;
+    }
+
     if(num_pages > 1){
         virtual_page fvp = get_next_mult_avail(num_pages);
         for(int i = 0; i< num_pages;i++){
@@ -280,6 +287,7 @@ void *t_malloc(unsigned int num_bytes)
                 }
                 set_bit_at_index(virtual_bitmap, fvp.bitmap_index);
                 set_bit_at_index(physical_bitmap, pp.bitmap_index);
+                num_phys_page_left--;
                 fvp.bitmap_index = fvp.bitmap_index + 1;
                 int temp_bitmap_index = fvp.bitmap_index;
                 fvp.address = bitmap_index_to_va(temp_bitmap_index);
@@ -300,6 +308,8 @@ void *t_malloc(unsigned int num_bytes)
             }
             set_bit_at_index(virtual_bitmap, vp.bitmap_index);
             set_bit_at_index(physical_bitmap, pp.bitmap_index);
+            num_phys_page_left--;
+
         }else{
             return NULL;
         }

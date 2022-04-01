@@ -56,6 +56,8 @@ typedef unsigned long pde_t;
 
 #define TLB_ENTRIES 512
 
+int num_phys_page_left; //says how many physical pages are left
+
 void *physical_mem; // starting point for allocation of physical memory
 
 char *physical_bitmap;
