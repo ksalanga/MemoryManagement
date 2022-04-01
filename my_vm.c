@@ -273,6 +273,8 @@ void t_free(void *va, int size)
      * Part 2: Also, remove the translation from the TLB
      */
 
+    // Part 1
+
     if ((unsigned long)(va + size) < MAX_MEMSIZE)
     {
         int num_pages = ceil(((double)size) / PGSIZE) + 1e-9;
