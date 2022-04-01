@@ -174,7 +174,9 @@ int page_map(pde_t *pgdir, void *va, void *pa)
     return 1;
 }
 
-virtual_page* get_next_mult_avail(int num_pages){
+virtual_page get_next_mult_avail(int num_pages){
+    virtual_page first_free_virtual_page;
+    first_free_virtual_page.address = NULL;
     for(int i = 0; i < NUM_VIRTUAL_PAGES;i++){
         if(get_bit_at_index(virtual_bitmap, i) == 0){
             int success = 0;
@@ -189,11 +191,13 @@ virtual_page* get_next_mult_avail(int num_pages){
                 }
             }
             if(success == 0){
-                return bitmap_index_to_va(i);
+                first_free_virtual_page.address = bitmap_index_to_va(i);
+                first_free_virtual_page.bitmap_index = i;
+                return first_free_virtual_page;
             }
         }
     }
-    return 0;
+    return first_free_virtual_page;
 }
 /*Function that gets the next available page
  */
@@ -266,13 +270,33 @@ void *t_malloc(unsigned int num_bytes)
 
     int num_pages = ceil(((double)num_bytes) / PGSIZE) + 1e-9;
     if(num_pages > 1){
+        virtual_page fvp = get_next_mult_avail(num_pages);
+        for(int i = 0; i< num_pages;i++){
+            physical_page pp = get_next_phys();
+            if (fvp.address != NULL && pp.address != NULL){
+                int err = page_map(physical_mem, fvp.address, pp.address); 
+                if(err == -1){
+                    return NULL;
+                }
+                int temp_bitmap_index = fvp.bitmap_index++;
+                fvp = bitmap_index_to_va(temp);
+            }else{
+                return NULL;
+            }
+            
+        }
 
     }else{
         virtual_page vp = get_next_avail();
         physical_page pp = get_next_phys();
-        if (vp.address != NULL)
+        if (vp.address != NULL && pp.address != NULL)
         {
-            page_map(physical_mem, vp.address, pp.address); // pg directory?
+            int err = page_map(physical_mem, vp.address, pp.address); 
+            if(err == -1){
+                return NULL;
+            }
+        }else{
+            return NULL;
         }
     }
 
