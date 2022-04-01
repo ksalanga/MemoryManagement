@@ -273,7 +273,7 @@ void *t_malloc(unsigned int num_bytes)
     int num_pages = ceil(((double)num_bytes) / PGSIZE) + 1e-9;
 
     if((num_pages + 1) > num_phys_page_left){
-        return -1;
+        return NULL;
     }
 
     if(num_pages > 1){
