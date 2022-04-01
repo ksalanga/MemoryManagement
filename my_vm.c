@@ -279,7 +279,7 @@ void *t_malloc(unsigned int num_bytes)
                     return NULL;
                 }
                 int temp_bitmap_index = fvp.bitmap_index++;
-                fvp = bitmap_index_to_va(temp);
+                fvp.address = bitmap_index_to_va(temp_bitmap_index);
             }else{
                 return NULL;
             }
