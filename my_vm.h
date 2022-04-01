@@ -84,6 +84,12 @@ typedef struct VIRTUAL_PAGE
     int bitmap_index;
 } virtual_page;
 
+// Free Pages
+void free_pages(unsigned long page_directory_index, unsigned long page_table_index, int virtual_bitmap_index);
+
+// Conversion
+void *bitmap_index_to_va(int i);
+
 // Bits
 static int get_msb_index(unsigned long value);
 
