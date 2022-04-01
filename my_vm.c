@@ -278,6 +278,8 @@ void *t_malloc(unsigned int num_bytes)
                 if(err == -1){
                     return NULL;
                 }
+                set_bit_at_index(virtual_bitmap, fvp.bitmap_index);
+                set_bit_at_index(physical_bitmap, pp.bitmap_index);
                 fvp.bitmap_index = fvp.bitmap_index + 1;
                 int temp_bitmap_index = fvp.bitmap_index;
                 fvp.address = bitmap_index_to_va(temp_bitmap_index);
@@ -296,6 +298,8 @@ void *t_malloc(unsigned int num_bytes)
             if(err == -1){
                 return NULL;
             }
+            set_bit_at_index(virtual_bitmap, vp.bitmap_index);
+            set_bit_at_index(physical_bitmap, pp.bitmap_index);
         }else{
             return NULL;
         }
