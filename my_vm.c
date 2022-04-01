@@ -174,6 +174,27 @@ int page_map(pde_t *pgdir, void *va, void *pa)
     return 1;
 }
 
+virtual_page* get_next_mult_avail(int num_pages){
+    for(int i = 0; i < NUM_VIRTUAL_PAGES;i++){
+        if(get_bit_at_index(virtual_bitmap, i) == 0){
+            int success = 0;
+            for(int j = i; j<num_pages;j++){
+                if(success == 1){
+                    break;
+                }
+                if(get_bit_at_index(virtual_bitmap, j) == 0){
+                    success = 0;
+                }else{
+                    success = 1;
+                }
+            }
+            if(success == 0){
+                return bitmap_index_to_va(i);
+            }
+        }
+    }
+    return 0;
+}
 /*Function that gets the next available page
  */
 virtual_page get_next_avail()
@@ -244,12 +265,12 @@ void *t_malloc(unsigned int num_bytes)
     }
 
     int num_pages = ceil(((double)num_bytes) / PGSIZE) + 1e-9;
+    if(num_pages > 1){
 
-    for (int i = 0; i < num_pages; i++)
-    {
+    }else{
         virtual_page vp = get_next_avail();
         physical_page pp = get_next_phys();
-        if (next_vp != NULL)
+        if (vp.address != NULL)
         {
             page_map(physical_mem, vp.address, pp.address); // pg directory?
         }
