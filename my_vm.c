@@ -307,37 +307,43 @@ void *t_malloc(unsigned int num_bytes)
 
     if (num_pages > 1)
     {
-        struct Queue *phys_bitmap_indexes = createQueue();
         int clear = 0;
+        struct Queue *phys_bitmap_indexes = createQueue();
 
         virtual_page fvp = get_next_mult_avail(num_pages);
-        virtual_page cvp = fvp;
-        for (int i = 0; i < num_pages; i++)
+
+        if (fvp.bitmap_index != -1)
         {
-            physical_page pp = get_next_phys();
-            if (cvp.bitmap_index != -1 && pp.address != NULL)
+            virtual_page cvp = fvp;
+
+            for (int i = 0; i < num_pages; i++)
             {
-                enQueue(phys_bitmap_indexes, pp.bitmap_index);
-                int virtual_page = page_map(physical_mem, cvp.address, pp.address, phys_bitmap_indexes);
-                if (virtual_page == -1)
+                physical_page pp = get_next_phys();
+
+                if (pp.address != NULL)
+                {
+                    enQueue(phys_bitmap_indexes, pp.bitmap_index);
+                    int virtual_page = page_map(physical_mem, cvp.address, pp.address, phys_bitmap_indexes);
+                    if (virtual_page == -1)
+                    {
+                        fvp.address = NULL;
+                        clear = 1;
+                        break;
+                    }
+                    cvp.bitmap_index = cvp.bitmap_index + 1;
+                    int temp_bitmap_index = cvp.bitmap_index;
+                    cvp.address = bitmap_index_to_va(temp_bitmap_index);
+                }
+                else
                 {
                     fvp.address = NULL;
                     clear = 1;
                     break;
                 }
-                cvp.bitmap_index = cvp.bitmap_index + 1;
-                int temp_bitmap_index = cvp.bitmap_index;
-                cvp.address = bitmap_index_to_va(temp_bitmap_index);
-            }
-            else
-            {
-                fvp.address = NULL;
-                clear = 1;
-                break;
             }
         }
 
-        if (clear && fvp.bitmap_index != -1)
+        if (clear)
         {
             pthread_mutex_lock(&bitmap_lock);
             for (int i = 0; i < num_pages; i++)
