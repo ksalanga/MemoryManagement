@@ -278,6 +278,8 @@ void *t_malloc(unsigned int num_bytes)
     if((num_pages + 1) > num_phys_page_left){
         return NULL;
     }
+    
+    int p_bitmap_indexes[num_pages + 1];
 
     if(num_pages > 1){
         virtual_page fvp = get_next_mult_avail(num_pages);
