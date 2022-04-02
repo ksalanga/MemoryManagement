@@ -192,7 +192,7 @@ virtual_page get_next_mult_avail(int num_pages)
         if (get_bit_at_index(virtual_bitmap, i) == 0)
         {
             int success = 0;
-            for (int j = i; j < num_pages; j++)
+            for (int j = i; j < i + num_pages; j++)
             {
                 if (success == 1)
                 {
@@ -211,7 +211,7 @@ virtual_page get_next_mult_avail(int num_pages)
             {
                 first_free_virtual_page.address = bitmap_index_to_va(i);
                 first_free_virtual_page.bitmap_index = i;
-                for (int va_index = i; va_index < num_pages; i++)
+                for (int va_index = i; va_index < i + num_pages; va_index++)
                 {
                     set_bit_at_index(virtual_bitmap, va_index);
                 }
@@ -298,8 +298,6 @@ void *t_malloc(unsigned int num_bytes)
     }
 
     int num_pages = (double)ceil(((double)num_bytes) / PGSIZE) + 1e-9;
-
-    int p_bitmap_indexes[num_pages + 1];
 
     virtual_page fvp;
 
