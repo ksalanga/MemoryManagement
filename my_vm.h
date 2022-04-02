@@ -57,8 +57,6 @@ typedef unsigned long pde_t;
 
 #define TLB_ENTRIES 512
 
-int num_phys_page_left; //says how many physical pages are left
-
 void *physical_mem; // starting point for allocation of physical memory
 
 char *physical_bitmap;
@@ -110,6 +108,24 @@ pthread_mutex_t bitmap_lock;
 
 // log
 unsigned int log_2(int i);
+
+// Queue Structure
+struct QNode
+{
+    int key;
+    struct QNode *next;
+};
+struct Queue
+{
+    struct QNode *front, *rear;
+};
+struct QNode *newNode(int k);
+struct Queue *createQueue();
+void enQueue(struct Queue *q, int k);
+void deQueue(struct Queue *q);
+int isEmpty(struct Queue *q);
+
+void clear_p_bitmap_index_q(struct Queue *q);
 
 void set_physical_mem();
 pte_t *translate(pde_t *pgdir, void *va);
