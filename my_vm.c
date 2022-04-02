@@ -13,7 +13,6 @@ void set_physical_mem()
     // virtual and physical bitmaps and initialize them
     physical_mem = mmap(NULL, MEMSIZE, PROT_WRITE | PROT_READ, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 
-    num_phys_page_left = NUM_PHYSICAL_PAGES;
     pthread_mutex_init(&bitmap_lock, NULL);
 
     if (physical_mem == MAP_FAILED)
@@ -151,7 +150,8 @@ int page_map(pde_t *pgdir, void *va, void *pa)
 
     if (!page_directory_entry)
     {
-        page_directory_entry = (pde_t)get_next_phys().address;
+        physical_page virtual_page_physical_entry = get_next_phys();
+        page_directory_entry = (pde_t)virtual_page_physical_entry.address;
 
         if (page_directory_entry)
         {
@@ -174,32 +174,44 @@ int page_map(pde_t *pgdir, void *va, void *pa)
 
 #endif
 
-    return 1;
+    return 0;
 }
 
-virtual_page get_next_mult_avail(int num_pages){
+virtual_page get_next_mult_avail(int num_pages)
+{
     virtual_page first_free_virtual_page;
     first_free_virtual_page.address = NULL;
-    for(int i = 0; i < NUM_VIRTUAL_PAGES;i++){
-        if(get_bit_at_index(virtual_bitmap, i) == 0){
+
+    pthread_mutex_lock(&bitmap_lock);
+    for (int i = 0; i < NUM_VIRTUAL_PAGES; i++)
+    {
+        if (get_bit_at_index(virtual_bitmap, i) == 0)
+        {
             int success = 0;
-            for(int j = i; j<num_pages;j++){
-                if(success == 1){
+            for (int j = i; j < num_pages; j++)
+            {
+                if (success == 1)
+                {
                     break;
                 }
-                if(get_bit_at_index(virtual_bitmap, j) == 0){
+                if (get_bit_at_index(virtual_bitmap, j) == 0)
+                {
                     success = 0;
-                }else{
+                }
+                else
+                {
                     success = 1;
                 }
             }
-            if(success == 0){
+            if (success == 0)
+            {
                 first_free_virtual_page.address = bitmap_index_to_va(i);
                 first_free_virtual_page.bitmap_index = i;
-                return first_free_virtual_page;
+                break;
             }
         }
     }
+    pthread_mutex_unlock(&bitmap_lock);
     return first_free_virtual_page;
 }
 /*Function that gets the next available page
@@ -211,6 +223,7 @@ virtual_page get_next_avail()
     free_virtual_page.address = NULL;
     free_virtual_page.bitmap_index = -1;
 
+    pthread_mutex_lock(&bitmap_lock);
     for (int i = 0; i < NUM_VIRTUAL_PAGES; i++)
     {
         if (!get_bit_at_index(virtual_bitmap, i))
@@ -218,12 +231,14 @@ virtual_page get_next_avail()
 #if LEVELS == 2
             free_virtual_page.address = bitmap_index_to_va(i);
             free_virtual_page.bitmap_index = i;
+            set_bit_at_index(virtual_bitmap, i);
             break;
 #else
 // multilevels
 #endif
         }
     }
+    pthread_mutex_unlock(&bitmap_lock);
     return free_virtual_page;
 }
 
@@ -231,15 +246,18 @@ physical_page get_next_phys()
 {
     physical_page free_physical_page;
     free_physical_page.address = NULL;
+    pthread_mutex_lock(&bitmap_lock);
     for (int i = 1; i < NUM_PHYSICAL_PAGES; i++)
     {
         if (!get_bit_at_index(physical_bitmap, i))
         {
             free_physical_page.address = physical_mem + i * PGSIZE;
             free_physical_page.bitmap_index = i;
+            set_bit_at_index(physical_bitmap, i);
             break;
         }
     }
+    pthread_mutex_unlock(&bitmap_lock);
     return free_physical_page;
 }
 
@@ -272,62 +290,67 @@ void *t_malloc(unsigned int num_bytes)
     {
         set_physical_mem();
     }
+    pthread_mutex_unlock(&bitmap_lock);
 
-    int num_pages = (double) ceil(((double)num_bytes) / PGSIZE) + 1e-9;
+    int num_pages = (double)ceil(((double)num_bytes) / PGSIZE) + 1e-9;
 
-    if((num_pages + 1) > num_phys_page_left){
-        return NULL;
-    }
-    
     int p_bitmap_indexes[num_pages + 1];
 
-    if(num_pages > 1){
+    if (num_pages > 1)
+    {
         virtual_page fvp = get_next_mult_avail(num_pages);
         virtual_page cvp = fvp;
-        for(int i = 0; i< num_pages;i++){
+        for (int i = 0; i < num_pages; i++)
+        {
             physical_page pp = get_next_phys();
-            if (cvp.bitmap_index != -1 && pp.address != NULL){
-                int err = page_map(physical_mem, cvp.address, pp.address); 
-                if(err == -1){
-                    pthread_mutex_unlock(&bitmap_lock);
+            if (cvp.bitmap_index != -1 && pp.address != NULL)
+            {
+                int virtual_page = page_map(physical_mem, cvp.address, pp.address);
+                if (virtual_page == -1)
+                {
                     return NULL;
                 }
-                set_bit_at_index(virtual_bitmap, cvp.bitmap_index);
-                set_bit_at_index(physical_bitmap, pp.bitmap_index);
-                num_phys_page_left--;
                 cvp.bitmap_index = cvp.bitmap_index + 1;
                 int temp_bitmap_index = cvp.bitmap_index;
                 cvp.address = bitmap_index_to_va(temp_bitmap_index);
-            }else{
-                pthread_mutex_unlock(&bitmap_lock);
-                return NULL; 
             }
-            
+            else
+            {
+                return NULL;
+            }
         }
 
-        pthread_mutex_unlock(&bitmap_lock);
         return fvp.address;
-    }else{
+    }
+    else
+    {
         virtual_page vp = get_next_avail();
         physical_page pp = get_next_phys();
         if (vp.bitmap_index != -1 && pp.address != NULL)
         {
-            int err = page_map(physical_mem, vp.address, pp.address); 
-            if(err == -1){
+            int virtual_page = page_map(physical_mem, vp.address, pp.address);
+            if (virtual_page == -1)
+            {
+                pthread_mutex_lock(&bitmap_lock);
+
+                clear_bit_at_index(virtual_bitmap, vp.bitmap_index);
+                clear_bit_at_index(physical_bitmap, pp.bitmap_index);
+
                 pthread_mutex_unlock(&bitmap_lock);
                 return NULL;
             }
-            set_bit_at_index(virtual_bitmap, vp.bitmap_index);
-            set_bit_at_index(physical_bitmap, pp.bitmap_index);
-            num_phys_page_left--;
-            pthread_mutex_unlock(&bitmap_lock);
             return vp.address;
-        }else{
+        }
+        else
+        {
+            pthread_mutex_lock(&bitmap_lock);
+
+            clear_bit_at_index(physical_bitmap, pp.bitmap_index);
+
             pthread_mutex_unlock(&bitmap_lock);
             return NULL;
         }
     }
-    pthread_mutex_unlock(&bitmap_lock);
     return NULL;
 }
 
@@ -348,7 +371,7 @@ void t_free(void *va, int size)
     if ((unsigned long)(va + size) < MAX_MEMSIZE)
     {
         pthread_mutex_lock(&bitmap_lock);
-        int num_pages = (double) ceil(((double)size) / PGSIZE) + 1e-9;
+        int num_pages = (double)ceil(((double)size) / PGSIZE) + 1e-9;
 
 #if LEVELS == 2
         unsigned long starting_vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
@@ -371,7 +394,6 @@ void t_free(void *va, int size)
 
                 free_pages(current_page_directory_index, current_page_table_index, va_index);
             }
-
         }
 #else
 
@@ -457,8 +479,8 @@ void mat_mult(void *mat1, void *mat2, int size, void *answer)
 
 void *bitmap_index_to_va(int i)
 {
-    unsigned long page_directory_index = i / ((int) PAGE_TABLE_ENTRIES);
-    unsigned long page_table_index = i % ((int) PAGE_TABLE_ENTRIES);
+    unsigned long page_directory_index = i / ((int)PAGE_TABLE_ENTRIES);
+    unsigned long page_table_index = i % ((int)PAGE_TABLE_ENTRIES);
 
     unsigned long VPN = page_directory_index;
     VPN <<= PAGE_TABLE_BIT_SIZE;
@@ -515,6 +537,69 @@ static int get_bit_at_index(char *bitmap, int index)
     int bit = bitmap[index / 8];
     bit >>= (index % 8);
     return bit & 1;
+}
+
+void clear_p_bitmap_index_q(struct Queue *q)
+{
+    while (!isEmpty(q))
+    {
+        deQueue(q);
+    }
+
+    free(q);
+}
+
+struct QNode *newNode(int k)
+{
+    struct QNode *temp = (struct QNode *)malloc(sizeof(struct QNode));
+    temp->key = k;
+    temp->next = NULL;
+    return temp;
+}
+
+struct Queue *createQueue()
+{
+    struct Queue *q = (struct Queue *)malloc(sizeof(struct Queue));
+    q->front = q->rear = NULL;
+    return q;
+}
+
+void enQueue(struct Queue *q, int k)
+{
+    struct QNode *temp = newNode(k);
+
+    if (q->rear == NULL)
+    {
+        q->front = q->rear = temp;
+        return;
+    }
+
+    q->rear->next = temp;
+    q->rear = temp;
+}
+
+void deQueue(struct Queue *q)
+{
+    if (q->front == NULL)
+        return;
+
+    struct QNode *temp = q->front;
+
+    q->front = q->front->next;
+
+    if (q->front == NULL)
+        q->rear = NULL;
+
+    free(temp);
+}
+
+int isEmpty(struct Queue *q)
+{
+    if (q->front == NULL)
+    {
+        return 1;
+    }
+    return 0;
 }
 
 unsigned int log_2(int i)
