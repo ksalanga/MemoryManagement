@@ -123,7 +123,7 @@ as an argument, and sets a page table entry. This function will walk the page
 directory to see if there is an existing mapping for a virtual address. If the
 virtual address is not present, then a new entry will be added
 */
-int page_map(pde_t *pgdir, void *va, void *pa)
+int page_map(pde_t *pgdir, void *va, void *pa, struct Queue *physical_bitmap_indexes)
 {
 
     /*HINT: Similar to translate(), find the page directory (1st level)
@@ -156,6 +156,11 @@ int page_map(pde_t *pgdir, void *va, void *pa)
         if (page_directory_entry)
         {
             *(pgdir + page_directory_index) = page_directory_entry;
+
+            if (physical_bitmap_indexes)
+            {
+                enQueue(physical_bitmap_indexes, virtual_page_physical_entry.bitmap_index);
+            }
         }
         else
         {
@@ -302,6 +307,9 @@ void *t_malloc(unsigned int num_bytes)
 
     if (num_pages > 1)
     {
+        struct Queue *phys_bitmap_indexes = createQueue();
+        int clear = 0;
+
         virtual_page fvp = get_next_mult_avail(num_pages);
         virtual_page cvp = fvp;
         for (int i = 0; i < num_pages; i++)
@@ -309,10 +317,13 @@ void *t_malloc(unsigned int num_bytes)
             physical_page pp = get_next_phys();
             if (cvp.bitmap_index != -1 && pp.address != NULL)
             {
-                int virtual_page = page_map(physical_mem, cvp.address, pp.address);
+                enQueue(phys_bitmap_indexes, pp.bitmap_index);
+                int virtual_page = page_map(physical_mem, cvp.address, pp.address, phys_bitmap_indexes);
                 if (virtual_page == -1)
                 {
-                    return NULL;
+                    fvp.address = NULL;
+                    clear = 1;
+                    break;
                 }
                 cvp.bitmap_index = cvp.bitmap_index + 1;
                 int temp_bitmap_index = cvp.bitmap_index;
@@ -320,10 +331,24 @@ void *t_malloc(unsigned int num_bytes)
             }
             else
             {
-                return NULL;
+                fvp.address = NULL;
+                clear = 1;
+                break;
             }
         }
 
+        if (clear && fvp.bitmap_index != -1)
+        {
+            pthread_mutex_lock(&bitmap_lock);
+            for (int i = 0; i < num_pages; i++)
+            {
+                clear_bit_at_index(virtual_bitmap, fvp.bitmap_index);
+                fvp.bitmap_index++;
+            }
+            pthread_mutex_unlock(&bitmap_lock);
+        }
+
+        clean_p_bitmap_index_q(phys_bitmap_indexes, clear);
         return fvp.address;
     }
     else
@@ -332,7 +357,7 @@ void *t_malloc(unsigned int num_bytes)
         physical_page pp = get_next_phys();
         if (vp.bitmap_index != -1 && pp.address != NULL)
         {
-            int virtual_page = page_map(physical_mem, vp.address, pp.address);
+            int virtual_page = page_map(physical_mem, vp.address, pp.address, NULL);
             if (virtual_page == -1)
             {
                 pthread_mutex_lock(&bitmap_lock);
@@ -543,12 +568,22 @@ static int get_bit_at_index(char *bitmap, int index)
     return bit & 1;
 }
 
-void clear_p_bitmap_index_q(struct Queue *q)
+void clean_p_bitmap_index_q(struct Queue *q, int clear)
 {
+    if (clear)
+        pthread_mutex_lock(&bitmap_lock);
+
     while (!isEmpty(q))
     {
-        deQueue(q);
+        int physical_bitmap_index = deQueue(q);
+        if (clear)
+        {
+            clear_bit_at_index(physical_bitmap, physical_bitmap_index);
+        }
     }
+
+    if (clear)
+        pthread_mutex_unlock(&bitmap_lock);
 
     free(q);
 }
@@ -582,12 +617,14 @@ void enQueue(struct Queue *q, int k)
     q->rear = temp;
 }
 
-void deQueue(struct Queue *q)
+int deQueue(struct Queue *q)
 {
     if (q->front == NULL)
-        return;
+        return -1;
 
     struct QNode *temp = q->front;
+
+    int value = temp->key;
 
     q->front = q->front->next;
 
@@ -595,6 +632,7 @@ void deQueue(struct Queue *q)
         q->rear = NULL;
 
     free(temp);
+    return value;
 }
 
 int isEmpty(struct Queue *q)
