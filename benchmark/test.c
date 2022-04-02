@@ -12,10 +12,16 @@ void translate_test();
 
 int main()
 {
+    void *pointers[3];
+    for (int i = 0; i < 3; i++) {
+        pointers[i] = t_malloc(10000);
+        printf("%p\n", pointers[i]);
+    }
 
-    set_physical_mem();
-
-    translate_test();
+    for (int i = 0; i < 3; i++) {
+        t_free(pointers[i], 10000);
+    }
+    printf("\n");
 
     return 0;
 }

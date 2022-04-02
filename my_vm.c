@@ -209,6 +209,7 @@ virtual_page get_next_avail()
     virtual_page free_virtual_page;
 
     free_virtual_page.address = NULL;
+    free_virtual_page.bitmap_index = -1;
 
     for (int i = 0; i < NUM_VIRTUAL_PAGES; i++)
     {
@@ -266,34 +267,35 @@ void *t_malloc(unsigned int num_bytes)
      * have to mark which physical pages are used.
      */
 
+    pthread_mutex_lock(&bitmap_lock);
     if (physical_mem == NULL)
     {
         set_physical_mem();
     }
 
-    int num_pages = ceil(((double)num_bytes) / PGSIZE) + 1e-9;
+    int num_pages = (double) ceil(((double)num_bytes) / PGSIZE) + 1e-9;
 
     if((num_pages + 1) > num_phys_page_left){
         return NULL;
     }
 
-    pthread_mutex_lock(&bitmap_lock);
     if(num_pages > 1){
         virtual_page fvp = get_next_mult_avail(num_pages);
+        virtual_page cvp = fvp;
         for(int i = 0; i< num_pages;i++){
             physical_page pp = get_next_phys();
-            if (fvp.address != NULL && pp.address != NULL){
-                int err = page_map(physical_mem, fvp.address, pp.address); 
+            if (cvp.bitmap_index != -1 && pp.address != NULL){
+                int err = page_map(physical_mem, cvp.address, pp.address); 
                 if(err == -1){
                     pthread_mutex_unlock(&bitmap_lock);
                     return NULL;
                 }
-                set_bit_at_index(virtual_bitmap, fvp.bitmap_index);
+                set_bit_at_index(virtual_bitmap, cvp.bitmap_index);
                 set_bit_at_index(physical_bitmap, pp.bitmap_index);
                 num_phys_page_left--;
-                fvp.bitmap_index = fvp.bitmap_index + 1;
-                int temp_bitmap_index = fvp.bitmap_index;
-                fvp.address = bitmap_index_to_va(temp_bitmap_index);
+                cvp.bitmap_index = cvp.bitmap_index + 1;
+                int temp_bitmap_index = cvp.bitmap_index;
+                cvp.address = bitmap_index_to_va(temp_bitmap_index);
             }else{
                 pthread_mutex_unlock(&bitmap_lock);
                 return NULL; 
@@ -301,10 +303,12 @@ void *t_malloc(unsigned int num_bytes)
             
         }
 
+        pthread_mutex_unlock(&bitmap_lock);
+        return fvp.address;
     }else{
         virtual_page vp = get_next_avail();
         physical_page pp = get_next_phys();
-        if (vp.address != NULL && pp.address != NULL)
+        if (vp.bitmap_index != -1 && pp.address != NULL)
         {
             int err = page_map(physical_mem, vp.address, pp.address); 
             if(err == -1){
@@ -314,7 +318,8 @@ void *t_malloc(unsigned int num_bytes)
             set_bit_at_index(virtual_bitmap, vp.bitmap_index);
             set_bit_at_index(physical_bitmap, pp.bitmap_index);
             num_phys_page_left--;
-
+            pthread_mutex_unlock(&bitmap_lock);
+            return vp.address;
         }else{
             pthread_mutex_unlock(&bitmap_lock);
             return NULL;
@@ -341,12 +346,12 @@ void t_free(void *va, int size)
     if ((unsigned long)(va + size) < MAX_MEMSIZE)
     {
         pthread_mutex_lock(&bitmap_lock);
-        int num_pages = ceil(((double)size) / PGSIZE) + 1e-9;
+        int num_pages = (double) ceil(((double)size) / PGSIZE) + 1e-9;
 
 #if LEVELS == 2
         unsigned long starting_vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
         unsigned long starting_page_directory_index = get_top_bits(starting_vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
-        unsigned long starting_page_table_index = get_bottom_bits(PAGE_TABLE_BIT_SIZE, VPN_BIT_SIZE);
+        unsigned long starting_page_table_index = get_bottom_bits(starting_vpn, PAGE_TABLE_BIT_SIZE);
 
         int starting_bitmap_index = starting_page_directory_index * PAGE_TABLE_ENTRIES + starting_page_table_index;
 
@@ -360,16 +365,16 @@ void t_free(void *va, int size)
 
                 unsigned long current_vpn = get_top_bits((unsigned long)current_va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
                 unsigned long current_page_directory_index = get_top_bits(current_vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
-                unsigned long current_page_table_index = get_bottom_bits(PAGE_TABLE_BIT_SIZE, VPN_BIT_SIZE);
+                unsigned long current_page_table_index = get_bottom_bits(current_vpn, PAGE_TABLE_BIT_SIZE);
 
                 free_pages(current_page_directory_index, current_page_table_index, va_index);
             }
 
         }
-        pthread_mutex_unlock(&bitmap_lock);
 #else
 
 #endif
+        pthread_mutex_unlock(&bitmap_lock);
     }
 }
 
@@ -379,7 +384,7 @@ void free_pages(unsigned long page_directory_index, unsigned long page_table_ind
 
     pte_t *page_table = (pte_t *)page_directory_entry;
 
-    pte_t page_table_entry = *(page_table + page_table_index);
+    pte_t page_table_entry = *((pte_t *)page_table + page_table_index);
 
     clear_bit_at_index(physical_bitmap, ((void *)page_table_entry - physical_mem) / PGSIZE);
 
@@ -450,8 +455,8 @@ void mat_mult(void *mat1, void *mat2, int size, void *answer)
 
 void *bitmap_index_to_va(int i)
 {
-    unsigned long page_directory_index = i / PAGE_TABLE_ENTRIES;
-    unsigned long page_table_index = i % PAGE_TABLE_ENTRIES;
+    unsigned long page_directory_index = i / ((int) PAGE_TABLE_ENTRIES);
+    unsigned long page_table_index = i % ((int) PAGE_TABLE_ENTRIES);
 
     unsigned long VPN = page_directory_index;
     VPN <<= PAGE_TABLE_BIT_SIZE;
