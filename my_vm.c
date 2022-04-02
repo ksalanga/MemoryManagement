@@ -207,6 +207,10 @@ virtual_page get_next_mult_avail(int num_pages)
             {
                 first_free_virtual_page.address = bitmap_index_to_va(i);
                 first_free_virtual_page.bitmap_index = i;
+                for (int va_index = i; va_index < num_pages; i++)
+                {
+                    set_bit_at_index(virtual_bitmap, va_index);
+                }
                 break;
             }
         }
