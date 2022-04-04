@@ -231,6 +231,9 @@ virtual_page get_next_avail()
     free_virtual_page.address = NULL;
     free_virtual_page.bitmap_index = -1;
 
+    while (!virtual_bitmap)
+        ;
+
     for (int i = 0; i < NUM_VIRTUAL_PAGES; i++)
     {
         if (!get_bit_at_index(virtual_bitmap, i))
@@ -253,11 +256,14 @@ physical_page get_next_phys()
     physical_page free_physical_page;
     free_physical_page.address = NULL;
 
+    while (!physical_bitmap)
+        ;
+
     for (int i = 1; i < NUM_PHYSICAL_PAGES; i++)
     {
         if (!get_bit_at_index(physical_bitmap, i))
         {
-            free_physical_page.address = physical_mem + i * PGSIZE;
+            free_physical_page.address = physical_mem + i * (int) PGSIZE;
             free_physical_page.bitmap_index = i;
             set_bit_at_index(physical_bitmap, i);
             break;
@@ -296,6 +302,9 @@ void *t_malloc(unsigned int num_bytes)
     {
         set_physical_mem();
     }
+
+    while (!physical_mem)
+        ;
 
     int num_pages = (double)ceil(((double)num_bytes) / PGSIZE) + 1e-9;
 
