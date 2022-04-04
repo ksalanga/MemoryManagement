@@ -187,6 +187,9 @@ virtual_page get_next_mult_avail(int num_pages)
     virtual_page first_free_virtual_page;
     first_free_virtual_page.address = NULL;
 
+    while (!virtual_bitmap)
+        ;
+
     for (int i = 0; i < NUM_VIRTUAL_PAGES; i++)
     {
         if (get_bit_at_index(virtual_bitmap, i) == 0)
@@ -405,6 +408,10 @@ void t_free(void *va, int size)
     if ((unsigned long)(va + size) < MAX_MEMSIZE)
     {
         pthread_mutex_lock(&bitmap_lock);
+
+        while (!physical_mem && !physical_bitmap && !virtual_bitmap)
+            ;
+
         int num_pages = (double)ceil(((double)size) / PGSIZE) + 1e-9;
 
 #if LEVELS == 2
