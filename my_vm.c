@@ -150,8 +150,8 @@ int page_map(pde_t *pgdir, void *va, void *pa, struct Queue *physical_bitmap_ind
 
     if (!page_directory_entry)
     {
-        physical_page virtual_page_physical_entry = get_next_phys();
-        page_directory_entry = (pde_t)virtual_page_physical_entry.address;
+        physical_page inner_page_physical_entry = get_next_phys();
+        page_directory_entry = (pde_t)inner_page_physical_entry.address;
 
         if (page_directory_entry)
         {
@@ -159,7 +159,7 @@ int page_map(pde_t *pgdir, void *va, void *pa, struct Queue *physical_bitmap_ind
 
             if (physical_bitmap_indexes)
             {
-                enQueue(physical_bitmap_indexes, virtual_page_physical_entry.bitmap_index);
+                enQueue(physical_bitmap_indexes, inner_page_physical_entry.bitmap_index);
             }
         }
         else
@@ -408,9 +408,6 @@ void t_free(void *va, int size)
     if ((unsigned long)(va + size) < MAX_MEMSIZE)
     {
         pthread_mutex_lock(&bitmap_lock);
-
-        while (!physical_mem && !physical_bitmap && !virtual_bitmap)
-            ;
 
         int num_pages = (double)ceil(((double)size) / PGSIZE) + 1e-9;
 
