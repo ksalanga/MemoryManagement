@@ -450,7 +450,7 @@ void free_pages(unsigned long page_directory_index, unsigned long page_table_ind
 
     clear_bit_at_index(physical_bitmap, ((void *)page_table_entry - physical_mem) / PGSIZE);
 
-    *(page_table + page_table_index) = 0;
+    *((pte_t *)page_table + page_table_index) = 0;
     clear_bit_at_index(virtual_bitmap, virtual_bitmap_index);
 }
 
