@@ -104,7 +104,7 @@ static int get_bit_at_index(char *bitmap, int index);
 physical_page get_next_phys();
 
 // locks
-pthread_mutex_t bitmap_lock;
+static pthread_mutex_t bitmap_lock = PTHREAD_MUTEX_INITIALIZER;
 
 // log
 unsigned int log_2(int i);
