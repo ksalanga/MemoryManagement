@@ -432,6 +432,8 @@ void t_free(void *va, int size)
             {
                 void *current_va = bitmap_index_to_va(va_index);
 
+                current_va -= 0x1000;
+
                 unsigned long current_vpn = get_top_bits((unsigned long)current_va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
                 unsigned long current_page_directory_index = get_top_bits(current_vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
                 unsigned long current_page_table_index = get_bottom_bits(current_vpn, PAGE_TABLE_BIT_SIZE);
