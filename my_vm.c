@@ -465,8 +465,13 @@ void put_value(void *va, void *val, int size)
         unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
         if(offset == PGSIZE){
             //next page
+            unsigned long temp = (unsigned long)(va);
+            temp >> OFFSET_BIT_SIZE;
+            temp = temp + 1;
+            temp << OFFSET_BIT_SIZE;
         }else{
             //next offset
+            va = va + 1;
         }
 
 
