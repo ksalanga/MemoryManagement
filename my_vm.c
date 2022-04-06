@@ -144,8 +144,6 @@ int page_map(pde_t *pgdir, void *va, void *pa, struct Queue *physical_bitmap_ind
 
     unsigned long page_table_index = get_bottom_bits(vpn, PAGE_TABLE_BIT_SIZE);
 
-    pthread_mutex_lock(&bitmap_lock);
-
     pde_t page_directory_entry = *(pgdir + page_directory_index);
 
     if (!page_directory_entry)
@@ -166,7 +164,6 @@ int page_map(pde_t *pgdir, void *va, void *pa, struct Queue *physical_bitmap_ind
         else
         {
             // no physical pages
-            pthread_mutex_unlock(&bitmap_lock);
             return -1;
         }
     }
@@ -180,7 +177,6 @@ int page_map(pde_t *pgdir, void *va, void *pa, struct Queue *physical_bitmap_ind
     // map differently for multiple levels
 
 #endif
-    pthread_mutex_unlock(&bitmap_lock);
     return 0;
 }
 
@@ -302,7 +298,6 @@ void *t_malloc(unsigned int num_bytes)
     {
         set_physical_mem();
     }
-    pthread_mutex_unlock(&bitmap_lock);
 
     int num_pages = (double)ceil(((double)num_bytes) / PGSIZE) + 1e-9;
 
@@ -359,40 +354,29 @@ void *t_malloc(unsigned int num_bytes)
     }
     else
     {
-        pthread_mutex_lock(&bitmap_lock);
         fvp = get_next_avail();
-        pthread_mutex_unlock(&bitmap_lock);
 
-        pthread_mutex_lock(&bitmap_lock);
         physical_page pp = get_next_phys();
-        pthread_mutex_unlock(&bitmap_lock);
 
         if (fvp.bitmap_index != -1 && pp.address != NULL)
         {
             int virtual_page = page_map(physical_mem, fvp.address, pp.address, NULL);
             if (virtual_page == -1)
             {
-                pthread_mutex_lock(&bitmap_lock);
-
                 clear_bit_at_index(virtual_bitmap, fvp.bitmap_index);
                 clear_bit_at_index(physical_bitmap, pp.bitmap_index);
-
-                pthread_mutex_unlock(&bitmap_lock);
 
                 fvp.address = NULL;
             }
         }
         else
         {
-            pthread_mutex_lock(&bitmap_lock);
-
             clear_bit_at_index(physical_bitmap, pp.bitmap_index);
-
-            pthread_mutex_unlock(&bitmap_lock);
 
             fvp.address = NULL;
         }
     }
+    pthread_mutex_unlock(&bitmap_lock);
     return fvp.address;
 }
 
