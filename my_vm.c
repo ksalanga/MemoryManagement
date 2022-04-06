@@ -552,7 +552,7 @@ void mat_mult(void *mat1, void *mat2, int size, void *answer)
     }
 }
 
-void *bitmap_index_to_va(int i)
+void *bitmap_index_to_va(int i) // returns address + 0x1000 because VA starts at 0x1000
 {
     unsigned long page_directory_index = i / ((int)PAGE_TABLE_ENTRIES);
     unsigned long page_table_index = i % ((int)PAGE_TABLE_ENTRIES);
