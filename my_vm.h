@@ -129,7 +129,7 @@ void clean_p_bitmap_index_q(struct Queue *q, int clear);
 
 void set_physical_mem();
 pte_t *translate(pde_t *pgdir, void *va);
-int page_map(pde_t *pgdir, void *va, void *pa, struct Queue *physical_bitmap_indexes);
+int page_map(pde_t *pgdir, void *va, void *pa);
 bool check_in_tlb(void *va);
 void put_in_tlb(void *va, void *pa);
 void *t_malloc(unsigned int num_bytes);

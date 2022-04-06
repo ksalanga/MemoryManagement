@@ -121,7 +121,7 @@ as an argument, and sets a page table entry. This function will walk the page
 directory to see if there is an existing mapping for a virtual address. If the
 virtual address is not present, then a new entry will be added
 */
-int page_map(pde_t *pgdir, void *va, void *pa, struct Queue *physical_bitmap_indexes)
+int page_map(pde_t *pgdir, void *va, void *pa)
 {
 
     /*HINT: Similar to translate(), find the page directory (1st level)
@@ -156,11 +156,6 @@ int page_map(pde_t *pgdir, void *va, void *pa, struct Queue *physical_bitmap_ind
         if (page_directory_entry)
         {
             *(pgdir + page_directory_index) = page_directory_entry;
-
-            if (physical_bitmap_indexes)
-            {
-                enQueue(physical_bitmap_indexes, inner_page_physical_entry.bitmap_index);
-            }
         }
         else
         {
@@ -322,7 +317,7 @@ void *t_malloc(unsigned int num_bytes)
                 if (pp.address != NULL)
                 {
                     enQueue(phys_bitmap_indexes, pp.bitmap_index);
-                    int virtual_page = page_map(physical_mem, cvp.address, pp.address, phys_bitmap_indexes);
+                    int virtual_page = page_map(physical_mem, cvp.address, pp.address);
                     if (virtual_page == -1)
                     {
                         fvp.address = NULL;
@@ -361,7 +356,7 @@ void *t_malloc(unsigned int num_bytes)
 
         if (fvp.bitmap_index != -1 && pp.address != NULL)
         {
-            int virtual_page = page_map(physical_mem, fvp.address, pp.address, NULL);
+            int virtual_page = page_map(physical_mem, fvp.address, pp.address);
             if (virtual_page == -1)
             {
                 clear_bit_at_index(virtual_bitmap, fvp.bitmap_index);
@@ -459,19 +454,19 @@ void put_value(void *va, void *val, int size)
      * function.
      */
     va = va - 0x1000;
-    for(int i = 0; i< size;i++){
+    for (int i = 0; i < size; i++)
+    {
         pte_t pa = translate(physical_mem, va);
         memcpy(pa, (val + i), 1);
         unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
-        if(offset == PGSIZE){
-            //next page
-        }else{
-            //next offset
+        if (offset == PGSIZE)
+        {
+            // next page
         }
-
-
-
-
+        else
+        {
+            // next offset
+        }
     }
 }
 
