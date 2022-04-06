@@ -454,12 +454,16 @@ void free_pages(unsigned long page_directory_index, unsigned long page_table_ind
 
     pte_t *page_table = (pte_t *)page_directory_entry;
 
-    pte_t page_table_entry = *((pte_t *)page_table + page_table_index);
+    if (page_table) {
+        pte_t page_table_entry = *((pte_t *)page_table + page_table_index);
 
-    clear_bit_at_index(physical_bitmap, ((void *)page_table_entry - physical_mem) / PGSIZE);
+        if (page_table_entry) {
+            clear_bit_at_index(physical_bitmap, ((void *)page_table_entry - physical_mem) / PGSIZE);
 
-    *((pte_t *)page_table + page_table_index) = 0;
-    clear_bit_at_index(virtual_bitmap, virtual_bitmap_index);
+            *((pte_t *)page_table + page_table_index) = 0;
+            clear_bit_at_index(virtual_bitmap, virtual_bitmap_index);
+        }
+    }
 }
 
 /* The function copies data pointed by "val" to physical
