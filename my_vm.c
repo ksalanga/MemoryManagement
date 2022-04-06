@@ -127,6 +127,7 @@ int page_map(pde_t *pgdir, void *va, void *pa, struct Queue *physical_bitmap_ind
     /*HINT: Similar to translate(), find the page directory (1st level)
     and page table (2nd-level) indices. If no mapping exists, set the
     virtual to physical mapping */
+    va -= 0x1000;
 
     unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
 
@@ -392,6 +393,8 @@ void t_free(void *va, int size)
      * Part 2: Also, remove the translation from the TLB
      */
 
+    va -= 0x1000;
+
     // Part 1
 
     if ((unsigned long)(va + size) < MAX_MEMSIZE)
@@ -513,7 +516,7 @@ void *bitmap_index_to_va(int i)
     VPN <<= PAGE_TABLE_BIT_SIZE;
     VPN += page_table_index;
 
-    return (void *)(VPN << OFFSET_BIT_SIZE);
+    return (void *)((VPN << OFFSET_BIT_SIZE) + 0x1000);
 }
 
 static int get_msb_index(unsigned long value)
