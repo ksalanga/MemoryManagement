@@ -302,13 +302,13 @@ void *t_malloc(unsigned int num_bytes)
     if (num_pages > 1)
     {
         int clear = 0;
-        struct Queue *phys_bitmap_indexes = createQueue(); // necessary? / in wrong place?
+        struct Queue *phys_bitmap_indexes = createQueue();
 
         fvp = get_next_mult_avail(num_pages);
 
         if (fvp.bitmap_index != -1)
         {
-            virtual_page cvp = fvp; // current virtual page
+            virtual_page cvp = fvp;
 
             for (int i = 0; i < num_pages; i++)
             {
