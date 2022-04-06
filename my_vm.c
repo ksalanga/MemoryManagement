@@ -454,6 +454,12 @@ void put_value(void *va, void *val, int size)
      * function.
      */
     va = va - 0x1000;
+     unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
+    unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
+    unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
+    unsigned long page_table_index = get_bottom_bits(vpn, PAGE_TABLE_BIT_SIZE); 
+
+    int starting_bitmap_index = page_directory_index * PAGE_TABLE_ENTRIES + page_table_index;
     for (int i = 0; i < size; i++)
     {
         pte_t pa = translate(physical_mem, va);
@@ -462,10 +468,9 @@ void put_value(void *va, void *val, int size)
         if (offset == PGSIZE)
         {
             // next page
-            unsigned long temp = (unsigned long)(va);
-            temp >> OFFSET_BIT_SIZE;
-            temp = temp + 1;
-            temp << OFFSET_BIT_SIZE;
+            starting_bitmap_index++;
+            va = bitmap_index_to_va(starting_bitmap_index);
+            va = va - 0x1000;
         }
         else
         {
