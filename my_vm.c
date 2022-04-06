@@ -330,6 +330,20 @@ void *t_malloc(unsigned int num_bytes)
                 }
                 else
                 {
+                    cvp = fvp;
+                    // clear/free inner page entries
+                    for (int j = 0; j < i; j++) {
+                        cvp.address -= 0x1000;
+
+                        unsigned long vpn = get_top_bits((unsigned long)cvp.address, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
+                        unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
+                        unsigned long page_table_index = get_bottom_bits(vpn, PAGE_TABLE_BIT_SIZE);
+
+                        free_pages(page_directory_index, page_table_index, cvp.bitmap_index);
+
+                        cvp.bitmap_index++;
+                        cvp.address = bitmap_index_to_va(cvp.bitmap_index);
+                    }
                     fvp.address = NULL;
                     clear = 1;
                     break;
@@ -356,8 +370,9 @@ void *t_malloc(unsigned int num_bytes)
 
         if (fvp.bitmap_index != -1 && pp.address != NULL)
         {
-            int virtual_page = page_map(physical_mem, fvp.address, pp.address);
-            if (virtual_page == -1)
+            int inner_page_entry = page_map(physical_mem, fvp.address, pp.address);
+
+            if (inner_page_entry == -1) // Cannot allocate physical inner page
             {
                 clear_bit_at_index(virtual_bitmap, fvp.bitmap_index);
                 clear_bit_at_index(physical_bitmap, pp.bitmap_index);
@@ -367,7 +382,11 @@ void *t_malloc(unsigned int num_bytes)
         }
         else
         {
-            clear_bit_at_index(physical_bitmap, pp.bitmap_index);
+            if (fvp.bitmap_index != -1)
+                clear_bit_at_index(virtual_bitmap, fvp.bitmap_index);
+            
+            if (pp.address != NULL)
+                clear_bit_at_index(physical_bitmap, pp.bitmap_index);
 
             fvp.address = NULL;
         }
