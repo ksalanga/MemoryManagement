@@ -455,6 +455,21 @@ void put_value(void *va, void *val, int size)
      * than one page. Therefore, you may have to find multiple pages using translate()
      * function.
      */
+    va = va - 0x1000;
+    for(int i = 0; i< size;i++){
+        pte_t pa = translate(physical_mem, va);
+        memcpy(pa, (val + i), 1);
+        unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
+        if(offset == PGSIZE){
+            //next page
+        }else{
+            //next offset
+        }
+
+
+
+
+    }
 }
 
 /*Given a virtual address, this function copies the contents of the page to val*/
