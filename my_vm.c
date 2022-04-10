@@ -238,6 +238,10 @@ virtual_page get_next_avail()
         }
     }
 
+    if (i % (int)PAGE_TABLE_ENTRIES == 0
+    && !allocate_inner_page(i)) {
+        free_virtual_page.address = NULL;
+    }
     return free_virtual_page;
 }
 
