@@ -377,6 +377,8 @@ void *t_malloc(unsigned int num_bytes)
                     break;
                 }
             }
+        } else {
+            clear = 1;
         }
 
         if (clear)
