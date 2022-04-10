@@ -455,18 +455,15 @@ void t_free(void *va, int size)
 
         for (int va_index = starting_bitmap_index + 1; va_index < starting_bitmap_index + num_pages; va_index++)
         {
-            if (get_bit_at_index(virtual_bitmap, va_index))
-            {
-                void *current_va = bitmap_index_to_va(va_index);
+            void *current_va = bitmap_index_to_va(va_index);
 
-                current_va -= 0x1000;
+            current_va -= 0x1000;
 
-                unsigned long current_vpn = get_top_bits((unsigned long)current_va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
-                unsigned long current_page_directory_index = get_top_bits(current_vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
-                unsigned long current_page_table_index = get_bottom_bits(current_vpn, PAGE_TABLE_BIT_SIZE);
+            unsigned long current_vpn = get_top_bits((unsigned long)current_va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
+            unsigned long current_page_directory_index = get_top_bits(current_vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
+            unsigned long current_page_table_index = get_bottom_bits(current_vpn, PAGE_TABLE_BIT_SIZE);
 
-                free_pages(current_page_directory_index, current_page_table_index, va_index);
-            }
+            free_pages(current_page_directory_index, current_page_table_index, va_index);
         }
     }
 }
