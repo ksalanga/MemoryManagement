@@ -235,7 +235,26 @@ virtual_page get_next_avail()
     return free_virtual_page;
 }
 
-physical_page get_next_phys()
+int allocate_inner_page(int bitmap_index) {
+    int page_directory_index = bitmap_index / (int) PAGE_TABLE_ENTRIES;
+
+    pde_t *pgdir = (pde_t *)physical_mem;
+    pde_t page_directory_entry = *(pgdir + page_directory_index);
+
+    if (!page_directory_entry) {
+        physical_page inner_page_physical_entry = get_next_phys(0);
+
+        page_directory_entry = (pde_t)inner_page_physical_entry.address;
+
+        if (page_directory_entry)
+        {
+            *(pgdir + page_directory_index) = page_directory_entry;
+            return 1;
+        }
+        return 0;
+    }
+}
+
 {
     physical_page free_physical_page;
     free_physical_page.address = NULL;
