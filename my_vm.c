@@ -80,6 +80,15 @@ pte_t *translate(pde_t *pgdir, void *va)
      * translation exists, then you can return physical address from the TLB.
      */
 
+    //Part 2:
+    //for(int i = 0; i<TLB_ENTRIES;i++){
+    //         if(TLB[i].va == va){
+    //             return TLB[i].pa;
+    //         } 
+    // }    
+    
+    
+    
     // Part 1:
     unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
     unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
