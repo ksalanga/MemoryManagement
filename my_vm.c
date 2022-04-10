@@ -343,7 +343,7 @@ void *t_malloc(unsigned int num_bytes)
 
             for (int i = 0; i < num_pages; i++)
             {
-                physical_page pp = get_next_phys();
+                physical_page pp = get_next_phys(1);
 
                 if (pp.address != NULL)
                 {
@@ -401,7 +401,7 @@ void *t_malloc(unsigned int num_bytes)
     {
         fvp = get_next_avail();
 
-        physical_page pp = get_next_phys();
+        physical_page pp = get_next_phys(1);
 
         if (fvp.address != NULL && pp.address != NULL)
         {
