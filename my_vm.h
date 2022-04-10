@@ -103,7 +103,7 @@ static void clear_bit_at_index(char *bitmap, int index);
 static int get_bit_at_index(char *bitmap, int index);
 
 // Gets next physical page
-physical_page get_next_phys();
+physical_page get_next_phys(int lock);
 
 // locks
 static pthread_mutex_t bitmap_lock = PTHREAD_MUTEX_INITIALIZER;
