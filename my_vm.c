@@ -37,7 +37,12 @@ int add_TLB(void *va, void *pa)
 {
 
     /*Part 2 HINT: Add a virtual to physical page translation to the TLB */
-
+    for (int i = 0; i < TLB_ENTRIES; i++) {
+        if (tlb[i] == NULL) {
+            return i;
+        }
+    }
+    
     return -1;
 }
 
@@ -49,8 +54,14 @@ int add_TLB(void *va, void *pa)
 pte_t *
 check_TLB(void *va)
 {
-
     /* Part 2: TLB lookup code here */
+    for(int i = 0; i<TLB_ENTRIES;i++){
+        if(tlb[i]->va == va){
+            return (pte_t *) tlb[i]->pa;
+        }
+    }
+
+    return NULL;
 }
 
 /*
