@@ -122,8 +122,6 @@ pte_t *translate(pde_t *pgdir, void *va)
 
     unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
 
-#if LEVELS == 2
-
     unsigned long page_table_index = get_bottom_bits(vpn, PAGE_TABLE_BIT_SIZE);
 
     pde_t page_directory_entry = *(pgdir + page_directory_index);
@@ -142,12 +140,6 @@ pte_t *translate(pde_t *pgdir, void *va)
         }
         return NULL;
     }
-
-#else
-
-    // get all inner page level indexes
-
-#endif
 
     // If translation not successful, then return NULL
     return NULL;
@@ -170,16 +162,6 @@ int page_map(pde_t *pgdir, void *va, void *pa)
     unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
 
     unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
-
-#if LEVELS == 2
-
-    // Go in page directory
-    // if no page directory entry, find a free physical page in memory and set that as the page directory entry.
-    // if no free physical page, return -1
-    // that page directory entry is now the inner page table
-
-    // go inside inner page table
-    // inner page table index is set to physical page
 
     unsigned long page_table_index = get_bottom_bits(vpn, PAGE_TABLE_BIT_SIZE);
 
@@ -206,11 +188,6 @@ int page_map(pde_t *pgdir, void *va, void *pa)
 
     *(page_table + page_table_index) = (pte_t)pa;
 
-#else
-
-    // map differently for multiple levels
-
-#endif
     return 0;
 }
 
@@ -270,14 +247,10 @@ virtual_page get_next_avail()
     {
         if (!get_bit_at_index(virtual_bitmap, i))
         {
-#if LEVELS == 2
             free_virtual_page.address = bitmap_index_to_va(i);
             free_virtual_page.bitmap_index = i;
             set_bit_at_index(virtual_bitmap, i);
             break;
-#else
-// multilevels
-#endif
         }
     }
 
@@ -455,7 +428,6 @@ void t_free(void *va, int size)
 
         int num_pages = (double)ceil(((double)size) / PGSIZE) + 1e-9;
 
-#if LEVELS == 2
         unsigned long starting_vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
         unsigned long starting_page_directory_index = get_top_bits(starting_vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
         unsigned long starting_page_table_index = get_bottom_bits(starting_vpn, PAGE_TABLE_BIT_SIZE);
@@ -479,10 +451,6 @@ void t_free(void *va, int size)
                 free_pages(current_page_directory_index, current_page_table_index, va_index);
             }
         }
-#else
-
-#endif
-        pthread_mutex_unlock(&bitmap_lock);
     }
 }
 
