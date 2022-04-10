@@ -48,14 +48,17 @@ int add_TLB(void *va, void *pa)
     time_t t;
     srand((unsigned) time(&t));
 
-    int tlb_index = rand() % TLB_ENTRIES;
+    int i = rand() % TLB_ENTRIES;
     // Eviction Policy
-    while(tlb[tlb_index] == NULL) {
+    while(tlb[i] == NULL) {
         time_t t;
         srand((unsigned) time(&t));
     }
 
-    return tlb_index;
+    tlb[i]->va = va;
+    tlb[i]->pa = pa;
+
+    return i;
 }
 
 /*
