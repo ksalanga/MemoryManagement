@@ -487,7 +487,7 @@ void put_value(void *va, void *val, int size)
     int starting_bitmap_index = page_directory_index * PAGE_TABLE_ENTRIES + page_table_index;
     for (int i = 0; i < size; i++)
     {
-        pte_t pa = translate(physical_mem, va);
+        pte_t* pa = translate(physical_mem, va);
         memcpy(pa, (val + i), 1);
         unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
         if (offset == PGSIZE)
@@ -522,7 +522,7 @@ void get_value(void *va, void *val, int size)
     int starting_bitmap_index = page_directory_index * PAGE_TABLE_ENTRIES + page_table_index;
     for (int i = 0; i < size; i++)
     {
-        pte_t pa = translate(physical_mem, va);
+        pte_t* pa = translate(physical_mem, va);
         memcpy((val + i), pa, 1);
         unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
         if (offset == PGSIZE)
