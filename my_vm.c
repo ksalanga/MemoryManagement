@@ -203,26 +203,21 @@ virtual_page get_next_mult_avail(int num_pages)
     {
         if (get_bit_at_index(virtual_bitmap, i) == 0)
         {
-            int success = 0;
+            int success = 1;
             for (int j = i; j < i + num_pages; j++)
             {
-                if (success == 1)
-                {
-                    break;
-                }
-                if (get_bit_at_index(virtual_bitmap, j) == 0)
+                if (get_bit_at_index(virtual_bitmap, j))
                 {
                     success = 0;
+                    break;
                 }
-                else
-                {
-                    success = 1;
                 }
-            }
-            if (success == 0)
+
+            if (success)
             {
                 first_free_virtual_page.address = bitmap_index_to_va(i);
                 first_free_virtual_page.bitmap_index = i;
+
                 for (int va_index = i; va_index < i + num_pages; va_index++)
                 {
                     set_bit_at_index(virtual_bitmap, va_index);
