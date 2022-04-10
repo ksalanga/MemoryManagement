@@ -105,6 +105,9 @@ static int get_bit_at_index(char *bitmap, int index);
 // Gets next physical page
 physical_page get_next_phys(int lock);
 
+// Allocates inner page if page directory at that index / PAGE_TABLE_ENTRIES hasn't been allocated yet
+int allocate_inner_page(int bitmap_index);
+
 // locks
 static pthread_mutex_t bitmap_lock = PTHREAD_MUTEX_INITIALIZER;
 
