@@ -167,23 +167,6 @@ int page_map(pde_t *pgdir, void *va, void *pa)
 
     pde_t page_directory_entry = *(pgdir + page_directory_index);
 
-    if (!page_directory_entry)
-    {
-        physical_page inner_page_physical_entry = get_next_phys();
-
-        page_directory_entry = (pde_t)inner_page_physical_entry.address;
-
-        if (page_directory_entry)
-        {
-            *(pgdir + page_directory_index) = page_directory_entry;
-        }
-        else
-        {
-            // no physical pages
-            return -1;
-        }
-    }
-
     pte_t *page_table = (pte_t *)page_directory_entry;
 
     *(page_table + page_table_index) = (pte_t)pa;
