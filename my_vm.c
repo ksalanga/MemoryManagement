@@ -37,6 +37,7 @@ int add_TLB(void *va, void *pa)
 {
 
     /*Part 2 HINT: Add a virtual to physical page translation to the TLB */
+    tlb_miss++;
     for (int i = 0; i < TLB_ENTRIES; i++) {
         if (tlb[i] == NULL) {
             tlb[i]->va = va;
@@ -53,16 +54,16 @@ int add_TLB(void *va, void *pa)
  * Returns the physical page address.
  * Feel free to extend this function and change the return type.
  */
-pte_t *
-check_TLB(void *va)
+pte_t * check_TLB(void *va)
 {
+    tlb_lookups++;
     /* Part 2: TLB lookup code here */
-    for(int i = 0; i<TLB_ENTRIES;i++){
+    for(int i = 0; i < TLB_ENTRIES;i++){
         if(tlb[i]->va == va){
             return (pte_t *) tlb[i]->pa;
         }
     }
-
+    add_TLB(va,(translate(physical_mem, va)));
     return NULL;
 }
 
@@ -75,6 +76,7 @@ void print_TLB_missrate()
     double miss_rate = 0;
 
     /*Part 2 Code here to calculate and print the TLB miss rate*/
+    miss_rate = (tlb_miss/tlb_lookups) * 100;
 
     fprintf(stderr, "TLB miss rate %lf \n", miss_rate);
 }
