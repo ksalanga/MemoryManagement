@@ -135,9 +135,7 @@ pte_t *translate(pde_t *pgdir, void *va)
 
         if (page_table_entry)
         {
-            if (!pa) {
-                add_TLB(va, (void *)(page_table_entry + offset));
-            }
+            add_TLB(va, (void *)(page_table_entry + offset));
 
             return (pte_t *)(page_table_entry + offset); //<-physical address?
         }
