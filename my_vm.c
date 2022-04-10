@@ -39,10 +39,12 @@ int add_TLB(void *va, void *pa)
     /*Part 2 HINT: Add a virtual to physical page translation to the TLB */
     for (int i = 0; i < TLB_ENTRIES; i++) {
         if (tlb[i] == NULL) {
+            tlb[i]->va = va;
+            tlb[i]->pa = pa;
             return i;
         }
     }
-    
+
     return -1;
 }
 
