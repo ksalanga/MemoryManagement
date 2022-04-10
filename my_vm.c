@@ -204,6 +204,12 @@ virtual_page get_next_mult_avail(int num_pages)
                 for (int va_index = i; va_index < i + num_pages; va_index++)
                 {
                     set_bit_at_index(virtual_bitmap, va_index);
+
+                    if (va_index % (int) PAGE_TABLE_ENTRIES == 0
+                    && !allocate_inner_page(va_index)) {
+                        first_free_virtual_page.address = NULL;
+                        break;
+                    }
                 }
                 break;
             }
