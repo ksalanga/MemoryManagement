@@ -265,10 +265,14 @@ int allocate_inner_page(int bitmap_index) {
     }
 }
 
+physical_page get_next_phys(int lock)
 {
     physical_page free_physical_page;
     free_physical_page.address = NULL;
 
+    if (lock)
+        pthread_mutex_lock(&bitmap_lock);
+    
     for (int i = 1; i < NUM_PHYSICAL_PAGES; i++)
     {
         if (!get_bit_at_index(physical_bitmap, i))
@@ -279,6 +283,9 @@ int allocate_inner_page(int bitmap_index) {
             break;
         }
     }
+
+    if (lock)
+        pthread_mutex_unlock(&bitmap_lock);
 
     return free_physical_page;
 }
