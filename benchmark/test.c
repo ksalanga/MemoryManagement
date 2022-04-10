@@ -12,16 +12,40 @@ void translate_test();
 
 int main()
 {
-    void *pointers[3];
-    for (int i = 0; i < 3; i++) {
-        pointers[i] = t_malloc(10000);
-        printf("%p\n", pointers[i]);
-    }
+    void *nothing = t_malloc(10000);
+    fprintf(stdout, "%p\n", nothing);
 
-    for (int i = 0; i < 3; i++) {
-        t_free(pointers[i], 10000);
-    }
-    printf("\n");
+    void *something = t_malloc(4097);
+    fprintf(stdout, "%p\n", something);
+
+    t_free(something, 4097);
+
+    void *newNothing = t_malloc(10000);
+    fprintf(stdout, "%p\n", newNothing);
+
+    void *newSomething = t_malloc(4097);
+    fprintf(stdout, "%p\n", newSomething);
+
+    // void *pointers[15];
+    // for (int i = 0; i < 15; i++)
+    // {
+    //     pointers[i] = t_malloc(1);
+    //     printf("%x\n", (int)pointers[i]);
+    // }
+
+    // for (int i = 0; i < 15; i++)
+    // {
+    //     t_free(pointers[i], 1);
+    // }
+
+    // void *pointers_2[15];
+    // for (int i = 0; i < 15; i++)
+    // {
+    //     pointers_2[i] = t_malloc(1);
+    //     printf("%x\n", (int)pointers_2[i]);
+    // }
+
+    // printBitmaps();
 
     return 0;
 }
