@@ -76,7 +76,7 @@ pte_t * check_TLB(void *va)
             return (pte_t *) tlb[i]->pa;
         }
     }
-    add_TLB(va,(translate(physical_mem, va)));
+
     return NULL;
 }
 
