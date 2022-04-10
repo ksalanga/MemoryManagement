@@ -348,16 +348,11 @@ void *t_malloc(unsigned int num_bytes)
                 if (pp.address != NULL)
                 {
                     enQueue(phys_bitmap_indexes, pp.bitmap_index);
-                    int virtual_page = page_map(physical_mem, cvp.address, pp.address);
-                    if (virtual_page == -1)
-                    {
-                        fvp.address = NULL;
-                        clear = 1;
-                        break;
-                    }
-                    cvp.bitmap_index = cvp.bitmap_index + 1;
-                    int temp_bitmap_index = cvp.bitmap_index;
-                    cvp.address = bitmap_index_to_va(temp_bitmap_index);
+
+                    page_map(physical_mem, cvp.address, pp.address);
+
+                    cvp.bitmap_index++;
+                    cvp.address = bitmap_index_to_va(cvp.bitmap_index);
                 }
                 else
                 {
@@ -405,15 +400,7 @@ void *t_malloc(unsigned int num_bytes)
 
         if (fvp.address != NULL && pp.address != NULL)
         {
-            int inner_page_entry = page_map(physical_mem, fvp.address, pp.address);
-
-            if (inner_page_entry == -1) // Cannot allocate physical inner page
-            {
-                clear_bit_at_index(virtual_bitmap, fvp.bitmap_index);
-                clear_bit_at_index(physical_bitmap, pp.bitmap_index);
-
-                fvp.address = NULL;
-            }
+            page_map(physical_mem, fvp.address, pp.address);
         }
         else
         {
