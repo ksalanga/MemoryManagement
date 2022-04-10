@@ -64,14 +64,16 @@ char *physical_bitmap;
 char *virtual_bitmap; // index 0 is the start of the page directory
 
 // Structure to represents TLB
-struct tlb
+struct tlb_entry
 {
-    /*Assume your TLB is a direct mapped TLB with number of entries as TLB_ENTRIES
-     * Think about the size of each TLB entry that performs virtual to physical
-     * address translation.
-     */
+    void *va;
+    void *pa;
 };
-struct tlb tlb_store;
+
+int tlb_miss;
+int tlb_lookups;
+
+struct tlb_entry *tlb[TLB_ENTRIES];
 
 typedef struct PHYSICAL_PAGE
 {
