@@ -192,7 +192,7 @@ virtual_page get_next_mult_avail(int num_pages)
                     success = 0;
                     break;
                 }
-                }
+            }
 
             if (success)
             {
@@ -337,7 +337,7 @@ void *t_malloc(unsigned int num_bytes)
 
         fvp = get_next_mult_avail(num_pages);
 
-        if (fvp.bitmap_index != -1)
+        if (fvp.address != NULL)
         {
             virtual_page cvp = fvp;
 
@@ -403,7 +403,7 @@ void *t_malloc(unsigned int num_bytes)
 
         physical_page pp = get_next_phys();
 
-        if (fvp.bitmap_index != -1 && pp.address != NULL)
+        if (fvp.address != NULL && pp.address != NULL)
         {
             int inner_page_entry = page_map(physical_mem, fvp.address, pp.address);
 
@@ -423,7 +423,7 @@ void *t_malloc(unsigned int num_bytes)
                 clear_bit_at_index(virtual_bitmap, fvp.bitmap_index);
             }    
             
-            if (pp.address != NULL)
+            if (pp.address != NULL) {
                 clear_bit_at_index(physical_bitmap, pp.bitmap_index);
             }
 
