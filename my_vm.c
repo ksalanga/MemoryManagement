@@ -109,13 +109,7 @@ pte_t *translate(pde_t *pgdir, void *va)
      */
 
     //Part 2:
-    //for(int i = 0; i<TLB_ENTRIES;i++){
-    //         if(TLB[i].va == va){
-    //             return TLB[i].pa;
-    //         } 
-    // }    
-    
-    
+    pte_t *pa = check_TLB(va);
     
     // Part 1:
     unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
@@ -137,6 +131,10 @@ pte_t *translate(pde_t *pgdir, void *va)
 
         if (page_table_entry)
         {
+            if (!pa) {
+                add_TLB(va, (void *)(page_table_entry + offset));
+            }
+            
             return (pte_t *)(page_table_entry + offset); //<-physical address?
         }
         return NULL;
