@@ -540,14 +540,14 @@ void put_value(void *va, void *val, int size)
         unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
         memcpy(pa + offset, (val + i), 1);
 
-        va++;
-
         if (offset + 1 == PGSIZE)
         {
             // next page
             starting_bitmap_index++;
             va = bitmap_index_to_va(starting_bitmap_index);
             va = va - 0x1000;
+        } else {
+            va++;
         }
     }
 }
@@ -573,14 +573,14 @@ void get_value(void *va, void *val, int size)
         unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
         memcpy((val + i), pa + offset, 1);
 
-        va++;
-
         if (offset + 1 == PGSIZE)
         {
             // next page
             starting_bitmap_index++;
             va = bitmap_index_to_va(starting_bitmap_index);
             va = va - 0x1000;
+        } else {
+            va++;
         }
     }
 
