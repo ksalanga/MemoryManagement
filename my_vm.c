@@ -42,11 +42,10 @@ int add_TLB(void *va, void *pa)
 {
 
     /*Part 2 HINT: Add a virtual to physical page translation to the TLB */
+    pthread_mutex_lock(&tlb_lock);
     tlb_miss++;
     for (int i = 0; i < TLB_ENTRIES; i++) {
-        if (tlb[i] == NULL) {
-            tlb[i]->va = va;
-            tlb[i]->pa = pa;
+            pthread_mutex_unlock(&tlb_lock);
             return i;
         }
     }
@@ -62,12 +61,14 @@ int add_TLB(void *va, void *pa)
         i = rand() % TLB_ENTRIES;
     }
 
-    tlb[i]->va = va;
-    tlb[i]->pa = pa;
+    pthread_mutex_unlock(&tlb_lock);
 
     return i;
 }
 
+    pthread_mutex_lock(&tlb_lock);
+    pthread_mutex_unlock(&tlb_lock);
+    pthread_mutex_unlock(&tlb_lock);
 /*
  * Part 2: Check TLB for a valid translation.
  * Returns the physical page address.
@@ -75,13 +76,14 @@ int add_TLB(void *va, void *pa)
  */
 pte_t * check_TLB(void *va)
 {
+    pthread_mutex_lock(&tlb_lock);
     tlb_lookups++;
     /* Part 2: TLB lookup code here */
     for(int i = 0; i < TLB_ENTRIES;i++){
-        if(tlb[i]->va == va){
-            return (pte_t *) tlb[i]->pa;
+            pthread_mutex_unlock(&tlb_lock);
         }
     }
+    pthread_mutex_unlock(&tlb_lock);
 
     return NULL;
 }

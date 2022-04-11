@@ -110,6 +110,7 @@ int allocate_inner_page(int bitmap_index);
 
 // locks
 static pthread_mutex_t bitmap_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t tlb_lock = PTHREAD_MUTEX_INITIALIZER;
 
 // log
 unsigned int log_2(int i);
