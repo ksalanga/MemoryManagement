@@ -45,6 +45,9 @@ int add_TLB(void *va, void *pa)
     pthread_mutex_lock(&tlb_lock);
     tlb_miss++;
     for (int i = 0; i < TLB_ENTRIES; i++) {
+        if (!tlb[i].va) {
+            tlb[i].va = va;
+            tlb[i].pa = pa;
             pthread_mutex_unlock(&tlb_lock);
             return i;
         }
@@ -61,6 +64,8 @@ int add_TLB(void *va, void *pa)
         i = rand() % TLB_ENTRIES;
     }
 
+    tlb[i].va = va;
+    tlb[i].pa = pa;
     pthread_mutex_unlock(&tlb_lock);
 
     return i;
@@ -68,6 +73,9 @@ int add_TLB(void *va, void *pa)
 
 void remove_TLB(void *va) {
     pthread_mutex_lock(&tlb_lock);
+    for (int i = 0; i < TLB_ENTRIES; i++) {
+        if (tlb[i].va == va) {
+            tlb[i].va = NULL;
     pthread_mutex_unlock(&tlb_lock);
             return;
         }
@@ -86,7 +94,10 @@ pte_t * check_TLB(void *va)
     tlb_lookups++;
     /* Part 2: TLB lookup code here */
     for(int i = 0; i < TLB_ENTRIES;i++){
+        if(tlb[i].va == va){
+            pte_t *tlb_entry = (pte_t *) tlb[i].pa;
             pthread_mutex_unlock(&tlb_lock);
+            return tlb_entry;
         }
     }
     pthread_mutex_unlock(&tlb_lock);
