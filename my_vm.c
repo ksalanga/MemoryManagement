@@ -233,8 +233,9 @@ virtual_page get_next_mult_avail(int num_pages)
                 {
                     set_bit_at_index(virtual_bitmap, va_index);
 
-                    if (va_index % (int) PAGE_TABLE_ENTRIES == 0
-                    && !allocate_inner_page(va_index)) {
+                    if (va_index % ((int)PAGE_TABLE_ENTRIES) == 0
+                        && !allocate_inner_page(va_index)
+                    ) {
                         first_free_virtual_page.address = NULL;
                         break;
                     }
@@ -270,7 +271,7 @@ virtual_page get_next_avail()
         }
     }
 
-    if (i % (int)PAGE_TABLE_ENTRIES == 0
+    if (i % ((int)PAGE_TABLE_ENTRIES) == 0
     && !allocate_inner_page(i)) {
         free_virtual_page.address = NULL;
     }
@@ -281,7 +282,7 @@ virtual_page get_next_avail()
 }
 
 int allocate_inner_page(int bitmap_index) {
-    int page_directory_index = bitmap_index / (int) PAGE_TABLE_ENTRIES;
+    int page_directory_index = bitmap_index / ((int) PAGE_TABLE_ENTRIES);
 
     pde_t *pgdir = (pde_t *)physical_mem;
     pde_t page_directory_entry = *(pgdir + page_directory_index);
