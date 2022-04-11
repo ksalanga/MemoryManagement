@@ -15,7 +15,9 @@
 #include <string.h>
 #include <pthread.h>
 
-#define PGSIZE 4096
+// Page Sizes:
+// 4096, 8192, 16384, 32768, 65536
+#define PGSIZE 65536
 
 #define LEVELS 2
 
