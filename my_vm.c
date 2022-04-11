@@ -527,28 +527,37 @@ void put_value(void *va, void *val, int size)
      * than one page. Therefore, you may have to find multiple pages using translate()
      * function.
      */
-    va = va - 0x1000;
+    va -= 0x1000;
     unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
     unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
     unsigned long page_table_index = get_bottom_bits(vpn, PAGE_TABLE_BIT_SIZE); 
 
     int starting_bitmap_index = page_directory_index * PAGE_TABLE_ENTRIES + page_table_index;
-    for (int i = 0; i < size; i++)
-    {
+
+    pte_t* pa = translate(physical_mem, va);
+
+    unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
+
+    int byte_size = min(((int) PGSIZE) - offset, size);
+
+    memcpy(pa + offset, val, byte_size);
+    
+    size -= byte_size;
+    int i = byte_size;
+    
+    while (size > 0) {
+        starting_bitmap_index++;
+        va = bitmap_index_to_va(starting_bitmap_index);
+        va -= 0x1000;
+
         pte_t* pa = translate(physical_mem, va);
 
-        unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
-        memcpy(pa + offset, (val + i), 1);
+        byte_size = min(((int) PGSIZE) - offset, size);
 
-        if (offset + 1 == PGSIZE)
-        {
-            // next page
-            starting_bitmap_index++;
-            va = bitmap_index_to_va(starting_bitmap_index);
-            va = va - 0x1000;
-        } else {
-            va++;
-        }
+        memcpy(pa, (val + i), byte_size);
+
+        size -= byte_size;
+        i += byte_size;
     }
 }
 
@@ -560,31 +569,38 @@ void get_value(void *va, void *val, int size)
      * "val" address. Assume you can access "val" directly by derefencing them.
      */
     
-    va = va - 0x1000;
+    va -= 0x1000;
     unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
     unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
     unsigned long page_table_index = get_bottom_bits(vpn, PAGE_TABLE_BIT_SIZE); 
 
     int starting_bitmap_index = page_directory_index * PAGE_TABLE_ENTRIES + page_table_index;
-    for (int i = 0; i < size; i++)
-    {
+
+    pte_t* pa = translate(physical_mem, va);
+
+    unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
+
+    int byte_size = min(((int) PGSIZE) - offset, size);
+
+    memcpy(val, pa + offset, byte_size);
+    
+    size -= byte_size;
+    int i = byte_size;
+    
+    while (size > 0) {
+        starting_bitmap_index++;
+        va = bitmap_index_to_va(starting_bitmap_index);
+        va -= 0x1000;
+
         pte_t* pa = translate(physical_mem, va);
 
-        unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
-        memcpy((val + i), pa + offset, 1);
+        byte_size = min(((int) PGSIZE) - offset, size);
 
-        if (offset + 1 == PGSIZE)
-        {
-            // next page
-            starting_bitmap_index++;
-            va = bitmap_index_to_va(starting_bitmap_index);
-            va = va - 0x1000;
-        } else {
-            va++;
-        }
+        memcpy((val + i), pa, byte_size);
+
+        size -= byte_size;
+        i += byte_size;
     }
-
-
 }
 
 /*
