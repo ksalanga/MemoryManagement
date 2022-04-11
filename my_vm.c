@@ -476,7 +476,6 @@ void t_free(void *va, int size)
 
         int starting_bitmap_index = starting_page_directory_index * PAGE_TABLE_ENTRIES + starting_page_table_index;
 
-        remove_TLB(va);
         free_pages(starting_page_directory_index, starting_page_table_index, starting_bitmap_index);
 
         for (int va_index = starting_bitmap_index + 1; va_index < starting_bitmap_index + num_pages; va_index++)
@@ -489,7 +488,6 @@ void t_free(void *va, int size)
             unsigned long current_page_directory_index = get_top_bits(current_vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
             unsigned long current_page_table_index = get_bottom_bits(current_vpn, PAGE_TABLE_BIT_SIZE);
 
-            remove_TLB(va);
             free_pages(current_page_directory_index, current_page_table_index, va_index);
         }
     }
@@ -501,18 +499,21 @@ void free_pages(unsigned long page_directory_index, unsigned long page_table_ind
 
     pte_t *page_table = (pte_t *)page_directory_entry;
 
+    pthread_mutex_lock(&bitmap_lock);
     if (page_table) {
         pte_t page_table_entry = *((pte_t *)page_table + page_table_index);
 
         if (page_table_entry) {
-            pthread_mutex_lock(&bitmap_lock);
             clear_bit_at_index(physical_bitmap, ((void *)page_table_entry - physical_mem) / PGSIZE);
 
             *((pte_t *)page_table + page_table_index) = 0;
             clear_bit_at_index(virtual_bitmap, virtual_bitmap_index);
-            pthread_mutex_unlock(&bitmap_lock);
         }
     }
+
+    remove_TLB(bitmap_index_to_va(virtual_bitmap_index) - 0x1000);
+
+    pthread_mutex_unlock(&bitmap_lock);
 }
 
 /* The function copies data pointed by "val" to physical
