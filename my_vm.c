@@ -74,7 +74,7 @@ void remove_TLB(void *va) {
     for (int i = 0; i < TLB_ENTRIES; i++) {
         if (tlb[i].va == va) {
             tlb[i].va = NULL;
-    pthread_mutex_unlock(&tlb_lock);
+            pthread_mutex_unlock(&tlb_lock);
             return;
         }
     }
@@ -528,7 +528,7 @@ void put_value(void *va, void *val, int size)
      * function.
      */
     va = va - 0x1000;
-     unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
+    unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
     unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
     unsigned long page_table_index = get_bottom_bits(vpn, PAGE_TABLE_BIT_SIZE); 
 
@@ -561,7 +561,7 @@ void get_value(void *va, void *val, int size)
      */
     
     va = va - 0x1000;
-     unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
+    unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
     unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
     unsigned long page_table_index = get_bottom_bits(vpn, PAGE_TABLE_BIT_SIZE); 
 
