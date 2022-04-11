@@ -40,7 +40,8 @@ void set_physical_mem()
  */
 int add_TLB(void *va, void *pa)
 {
-
+    va -= get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
+    va += 0x1000;
     /*Part 2 HINT: Add a virtual to physical page translation to the TLB */
     pthread_mutex_lock(&tlb_lock);
     tlb_miss++;
@@ -53,6 +54,7 @@ int add_TLB(void *va, void *pa)
         }
     }
 
+    // Eviction Policy
     time_t t;
     srand((unsigned) time(&t));
 
@@ -72,6 +74,8 @@ int add_TLB(void *va, void *pa)
 }
 
 void remove_TLB(void *va) {
+    va -= get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
+    va += 0x1000;
     pthread_mutex_lock(&tlb_lock);
     for (int i = 0; i < TLB_ENTRIES; i++) {
         if (tlb[i].va == va) {
@@ -90,6 +94,8 @@ void remove_TLB(void *va) {
  */
 pte_t * check_TLB(void *va)
 {
+    va -= get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
+    va += 0x1000;
     pthread_mutex_lock(&tlb_lock);
     tlb_lookups++;
     /* Part 2: TLB lookup code here */
@@ -158,9 +164,9 @@ pte_t *translate(pde_t *pgdir, void *va)
 
         if (page_table_entry)
         {
-            add_TLB(va, (void *)(page_table_entry + offset));
+            add_TLB(va, (void *)page_table_entry);
 
-            return (pte_t *)(page_table_entry + offset); //<-physical address?
+            return (pte_t *)page_table_entry; //<-physical address?
         }
         return NULL;
     }
@@ -528,7 +534,6 @@ void put_value(void *va, void *val, int size)
      */
     va = va - 0x1000;
      unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
-    unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
     unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
     unsigned long page_table_index = get_bottom_bits(vpn, PAGE_TABLE_BIT_SIZE); 
 
@@ -536,19 +541,18 @@ void put_value(void *va, void *val, int size)
     for (int i = 0; i < size; i++)
     {
         pte_t* pa = translate(physical_mem, va);
-        memcpy(pa, (val + i), 1);
+
         unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
-        if (offset == PGSIZE)
+        memcpy(pa + offset, (val + i), 1);
+
+        va++;
+
+        if (offset + 1 == PGSIZE)
         {
             // next page
             starting_bitmap_index++;
             va = bitmap_index_to_va(starting_bitmap_index);
             va = va - 0x1000;
-        }
-        else
-        {
-            // next offset
-            va = va + 1;
         }
     }
 }
@@ -563,7 +567,6 @@ void get_value(void *va, void *val, int size)
     
     va = va - 0x1000;
      unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
-    unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
     unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
     unsigned long page_table_index = get_bottom_bits(vpn, PAGE_TABLE_BIT_SIZE); 
 
@@ -571,19 +574,18 @@ void get_value(void *va, void *val, int size)
     for (int i = 0; i < size; i++)
     {
         pte_t* pa = translate(physical_mem, va);
-        memcpy((val + i), pa, 1);
+
         unsigned long offset = get_bottom_bits((unsigned long)va, OFFSET_BIT_SIZE);
-        if (offset == PGSIZE)
+        memcpy((val + i), pa + offset, 1);
+
+        va++;
+
+        if (offset + 1 == PGSIZE)
         {
             // next page
             starting_bitmap_index++;
             va = bitmap_index_to_va(starting_bitmap_index);
             va = va - 0x1000;
-        }
-        else
-        {
-            // next offset
-            va = va + 1;
         }
     }
 
