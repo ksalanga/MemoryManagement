@@ -17,7 +17,7 @@
 
 // Page Sizes:
 // 4096, 8192, 16384, 32768, 65536
-#define PGSIZE 65536
+#define PGSIZE 4096
 
 #define LEVELS 2
 
