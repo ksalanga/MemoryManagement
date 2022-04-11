@@ -66,9 +66,15 @@ int add_TLB(void *va, void *pa)
     return i;
 }
 
+void remove_TLB(void *va) {
     pthread_mutex_lock(&tlb_lock);
     pthread_mutex_unlock(&tlb_lock);
+            return;
+        }
+    }
     pthread_mutex_unlock(&tlb_lock);
+}
+
 /*
  * Part 2: Check TLB for a valid translation.
  * Returns the physical page address.
@@ -458,6 +464,7 @@ void t_free(void *va, int size)
 
         int starting_bitmap_index = starting_page_directory_index * PAGE_TABLE_ENTRIES + starting_page_table_index;
 
+        remove_TLB(va);
         free_pages(starting_page_directory_index, starting_page_table_index, starting_bitmap_index);
 
         for (int va_index = starting_bitmap_index + 1; va_index < starting_bitmap_index + num_pages; va_index++)
@@ -470,6 +477,7 @@ void t_free(void *va, int size)
             unsigned long current_page_directory_index = get_top_bits(current_vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
             unsigned long current_page_table_index = get_bottom_bits(current_vpn, PAGE_TABLE_BIT_SIZE);
 
+            remove_TLB(va);
             free_pages(current_page_directory_index, current_page_table_index, va_index);
         }
     }

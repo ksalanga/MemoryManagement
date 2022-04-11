@@ -73,7 +73,8 @@ struct tlb_entry
 double tlb_miss;
 double tlb_lookups;
 
-struct tlb_entry *tlb[TLB_ENTRIES];
+
+void remove_TLB(void *va);
 
 typedef struct PHYSICAL_PAGE
 {
