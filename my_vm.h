@@ -70,8 +70,8 @@ struct tlb_entry
     void *pa;
 };
 
-int tlb_miss;
-int tlb_lookups;
+double tlb_miss;
+double tlb_lookups;
 
 struct tlb_entry *tlb[TLB_ENTRIES];
 
