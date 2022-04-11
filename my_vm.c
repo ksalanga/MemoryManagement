@@ -183,6 +183,9 @@ int page_map(pde_t *pgdir, void *va, void *pa)
     virtual to physical mapping */
     va -= 0x1000;
 
+    tlb_lookups++;
+    add_TLB(va, pa);
+
     unsigned long vpn = get_top_bits((unsigned long)va, VPN_BIT_SIZE, SYSTEM_BIT_SIZE);
 
     unsigned long page_directory_index = get_top_bits(vpn, PAGE_DIRECTORY_BIT_SIZE, VPN_BIT_SIZE);
