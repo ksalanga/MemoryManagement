@@ -27,6 +27,11 @@ void set_physical_mem()
 
     virtual_bitmap = (char *)malloc(VIRTUAL_BITMAP_SIZE);
     memset(virtual_bitmap, 0, VIRTUAL_BITMAP_SIZE);
+
+    for (int i = 0; i < TLB_ENTRIES; i++) {
+        tlb[i].va = NULL;
+        tlb[i].pa = NULL;
+    }
 }
 
 /*
