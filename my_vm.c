@@ -116,7 +116,7 @@ void print_TLB_missrate()
     /*Part 2 Code here to calculate and print the TLB miss rate*/
     miss_rate = (tlb_miss/tlb_lookups) * 100;
 
-    fprintf(stderr, "TLB miss rate %lf \n", miss_rate);
+    fprintf(stdout, "TLB miss rate: %lf%%\n", miss_rate);
 }
 
 /*
