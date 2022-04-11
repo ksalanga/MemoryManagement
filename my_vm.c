@@ -788,3 +788,7 @@ unsigned int log_2(int i)
     };
     return l;
 }
+
+int min(int a, int b) {
+    return (a > b) ? b : a;
+};

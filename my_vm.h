@@ -135,6 +135,8 @@ void enQueue(struct Queue *q, int k);
 int deQueue(struct Queue *q);
 int isEmpty(struct Queue *q);
 
+int min(int a, int b);
+
 void clean_p_bitmap_index_q(struct Queue *q, int clear);
 
 void set_physical_mem();
